@@ -1,0 +1,24 @@
+{
+  "name": "flotiq-wordpress-import",
+  "version": "1.0.0",
+  "description": "Importer of wordpress posts to Flotiq",
+  "main": "src/command/command.js",
+  "bin": {
+    "flotiq-wordpress-import": "bin/flotiq-wordpress-import"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "flotiq",
+    "wordpress"
+  ],
+  "author": "Flotiq team <hello@flotiq.com>",
+  "license": "MIT",
+  "dependencies": {
+    "form-data": "^3.0.0",
+    "inquirer": "^7.3.0",
+    "node-fetch": "^2.6.0",
+    "yargs": "^15.3.1"
+  }
+}
