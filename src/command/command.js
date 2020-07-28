@@ -60,7 +60,7 @@ async function askStartQuestions() {
     return inquirer.prompt(questions);
 }
 
-exports.start = (apiKey, wordpressUrl) => {
+const start = (apiKey, wordpressUrl) => {
     if(wordpressUrl.charAt(wordpressUrl.length-1) !== '/') {
         wordpressUrl+='/';
     }
@@ -79,4 +79,6 @@ exports.start = (apiKey, wordpressUrl) => {
     });
 }
 
-//exports.start(apiKey, wordpressUrl)
+exports.start = start
+
+
