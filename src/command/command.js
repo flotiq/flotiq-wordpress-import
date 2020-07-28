@@ -10,6 +10,25 @@ const post = require('../importer/post');
 const page = require('../importer/page');
 const media = require('../importer/media');
 
+const start = (apiKey, wordpressUrl) => {
+    if (wordpressUrl.charAt(wordpressUrl.length - 1) !== '/') {
+        wordpressUrl += '/';
+    }
+    content_type_definitions.importer(apiKey).then(async () => {
+        author.importer(apiKey, wordpressUrl).then(async () => {
+            tag.importer(apiKey, wordpressUrl).then(async () => {
+                category.importer(apiKey, wordpressUrl).then(async () => {
+                    media.importer(apiKey, wordpressUrl).then(async (mediaArray) => {
+                        await post.importer(apiKey, wordpressUrl, mediaArray);
+                        await page.importer(apiKey, wordpressUrl, mediaArray);
+                        console.log('Finished');
+                    })
+                })
+            })
+        })
+    });
+}
+
 yargs
     .command('import [apiKey] [wordpressUrl]', 'Import wordpress to Flotiq', (yargs) => {
         yargs
@@ -24,7 +43,7 @@ yargs
     }, async (argv) => {
         if (yargs.argv._.length < 3) {
             const answers = await askStartQuestions();
-            const {apiKey, wordpressUrl} = answers;
+            const { apiKey, wordpressUrl } = answers;
             start(apiKey, wordpressUrl)
         } else if (yargs.argv._.length === 3) {
             start(argv.apiKey, argv.wordpressUrl)
@@ -60,21 +79,6 @@ async function askStartQuestions() {
     return inquirer.prompt(questions);
 }
 
-function start(apiKey, wordpressUrl) {
-    if(wordpressUrl.charAt(wordpressUrl.length-1) !== '/') {
-        wordpressUrl+='/';
-    }
-    content_type_definitions.importer(apiKey).then(async () => {
-        author.importer(apiKey, wordpressUrl).then(async () => {
-            tag.importer(apiKey, wordpressUrl).then(async () => {
-                category.importer(apiKey, wordpressUrl).then(async () => {
-                    media.importer(apiKey, wordpressUrl).then(async (mediaArray) => {
-                        await post.importer(apiKey, wordpressUrl, mediaArray);
-                        await page.importer(apiKey, wordpressUrl, mediaArray);
-                        console.log('Finished');
-                    })
-                })
-            })
-        })
-    });
-}
+
+
+exports.start = start
