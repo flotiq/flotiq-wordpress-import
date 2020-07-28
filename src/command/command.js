@@ -79,4 +79,4 @@ exports.start = (apiKey, wordpressUrl) => {
     });
 }
 
-exports.start(apiKey, wordpressUrl)
+//exports.start(apiKey, wordpressUrl)
