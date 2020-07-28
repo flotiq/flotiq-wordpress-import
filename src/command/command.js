@@ -24,7 +24,7 @@ yargs
     }, async (argv) => {
         if (yargs.argv._.length < 3) {
             const answers = await askStartQuestions();
-            const {apiKey, wordpressUrl} = answers;
+            const { apiKey, wordpressUrl } = answers;
             start(apiKey, wordpressUrl)
         } else if (yargs.argv._.length === 3) {
             start(argv.apiKey, argv.wordpressUrl)
@@ -61,8 +61,8 @@ async function askStartQuestions() {
 }
 
 const start = (apiKey, wordpressUrl) => {
-    if(wordpressUrl.charAt(wordpressUrl.length-1) !== '/') {
-        wordpressUrl+='/';
+    if (wordpressUrl.charAt(wordpressUrl.length - 1) !== '/') {
+        wordpressUrl += '/';
     }
     content_type_definitions.importer(apiKey).then(async () => {
         author.importer(apiKey, wordpressUrl).then(async () => {
@@ -80,5 +80,3 @@ const start = (apiKey, wordpressUrl) => {
 }
 
 exports.start = start
-
-
