@@ -60,7 +60,7 @@ async function askStartQuestions() {
     return inquirer.prompt(questions);
 }
 
-function start(apiKey, wordpressUrl) {
+exports.start = (apiKey, wordpressUrl) => {
     if(wordpressUrl.charAt(wordpressUrl.length-1) !== '/') {
         wordpressUrl+='/';
     }
