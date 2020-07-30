@@ -46,22 +46,26 @@
     ],
     "propertiesConfig": {
       "name": {
+        "label": "Name",
         "unique": false,
         "helpText": "",
         "inputType": "text",
         "isTitlePart": true
       },
       "slug": {
+        "label": "Slug",
         "unique": true,
         "helpText": "",
         "inputType": "text"
       },
       "description": {
+        "label": "Description",
         "unique": false,
         "helpText": "",
         "inputType": "textarea"
       },
       "parentCategory": {
+        "label": "Parent Category",
         "unique": false,
         "helpText": "",
         "inputType": "datasource",

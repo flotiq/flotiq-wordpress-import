@@ -74,17 +74,20 @@
     ],
     "propertiesConfig": {
       "slug": {
+        "label": "slug",
         "unique": true,
         "helpText": "",
         "inputType": "text"
       },
       "title": {
+        "label": "Title",
         "unique": false,
         "helpText": "",
         "inputType": "text",
         "isTitlePart": true
       },
       "author": {
+        "label": "Author",
         "unique": false,
         "helpText": "",
         "inputType": "datasource",
@@ -93,6 +96,7 @@
         }
       },
       "status": {
+        "label": "Status",
         "unique": false,
         "options": [
           "draft",
@@ -102,21 +106,25 @@
         "inputType": "select"
       },
       "content": {
+        "label": "Content",
         "unique": false,
         "helpText": "",
         "inputType": "richtext"
       },
       "created": {
+        "label": "Created",
         "unique": false,
         "helpText": "",
         "inputType": "text"
       },
       "modified": {
+        "label": "Modified",
         "unique": false,
         "helpText": "",
         "inputType": "text"
       },
       "parentPage": {
+        "label": "Parent Page",
         "unique": false,
         "helpText": "",
         "inputType": "datasource",
@@ -125,6 +133,7 @@
         }
       },
       "featuredMedia": {
+        "label": "Featured Media",
         "unique": false,
         "helpText": "",
         "inputType": "datasource",
