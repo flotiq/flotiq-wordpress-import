@@ -4,9 +4,15 @@ const FormData = require('form-data');
 
 exports.wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
     console.log('Fetching ' + wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id');
-    let response = await fetch(wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id', {
-        method: 'GET'
-    });
+    try{
+        let response = await fetch(wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id', {
+            method: 'GET'
+        });
+    }catch (e) {
+        console.errorCode(400);
+        console.error('Incorrect Wordpress Url');
+        process.exit(1);
+    }
     let totalCount = response.headers.get('X-WP-Total');
     totalPages = response.headers.get('X-WP-TotalPages');
     let responseJson = await response.json();
@@ -74,7 +80,9 @@ exports.flotiqMediaUpload = async (apiKey, contentTypeName, contentObject, image
                     headers: headers,
                 }).then(async res => {
                     if (res.status < 200 || res.status >= 300) {
-                        throw new Error(res.statusText + '(' + res.status + ')');
+                        console.errorCode(101);
+                        console.error(res.statusText + '(' + res.status + ')')
+                        process.exit(1);
                     }
                     return res.json()
                 });
