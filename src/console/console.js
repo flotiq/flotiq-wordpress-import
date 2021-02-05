@@ -10,7 +10,7 @@ let console = ((oldConsole, isJson, errors, stdOut, errorObject, fs) => {
                     errors: errors,
                     stdOut: stdOut
                 }
-                fs.writeFileSync('./error.json', JSON.stringify(json));
+                fs.writeFileSync('./output.json', JSON.stringify(json));
             }
         }
     })
