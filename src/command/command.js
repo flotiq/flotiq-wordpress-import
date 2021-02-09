@@ -5,12 +5,20 @@ const yargs = require('yargs');
 const content_type_definitions = require('../importer/content-type-definitions');
 const author = require('../importer/author');
 const category = require('../importer/category');
+const custom = require('../console/console');
 const tag = require('../importer/tag');
 const post = require('../importer/post');
 const page = require('../importer/page');
 const media = require('../importer/media');
+const fs = require('fs');
+const errors = [];
+const stdOut = [];
+let errorObject = {errorCode: 0};
+const oldConsole = console;
 
-const start = (apiKey, wordpressUrl) => {
+const start = (apiKey, wordpressUrl, isJson = false) => {
+    console = custom.console(oldConsole, isJson, errors, stdOut, errorObject, fs);
+
     if (wordpressUrl.charAt(wordpressUrl.length - 1) !== '/') {
         wordpressUrl += '/';
     }
@@ -30,6 +38,9 @@ const start = (apiKey, wordpressUrl) => {
 }
 
 yargs
+    .boolean('json-output')
+    .alias('json-output', ['j'])
+    .describe('json-output', ' Whether to return results as JSON')
     .command('import [apiKey] [wordpressUrl]', 'Import wordpress to Flotiq', (yargs) => {
         yargs
             .positional('apiKey', {
@@ -43,10 +54,10 @@ yargs
     }, async (argv) => {
         if (yargs.argv._.length < 3) {
             const answers = await askStartQuestions();
-            const { apiKey, wordpressUrl } = answers;
-            start(apiKey, wordpressUrl)
+            const {apiKey, wordpressUrl} = answers;
+            start(apiKey, wordpressUrl, yargs.argv['json-output'])
         } else if (yargs.argv._.length === 3) {
-            start(argv.apiKey, argv.wordpressUrl)
+            start(argv.apiKey, argv.wordpressUrl, yargs.argv['json-output'])
         } else {
             yargs.showHelp();
             process.exit(1);
@@ -78,7 +89,6 @@ async function askStartQuestions() {
     ];
     return inquirer.prompt(questions);
 }
-
 
 
 exports.start = start
