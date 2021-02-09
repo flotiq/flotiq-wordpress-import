@@ -47,8 +47,31 @@ or in development:
 
 `wordpressUrl` - full link to your Wordpress site
 
+### Flags
+
+`--json-output`, `-j` - Error and console output will be additionally written into json file named `output.json`.
+
 ## Collaboration
 
 If you wish to talk with us about this project, feel free to hop on [![Discord Chat](https://img.shields.io/discord/682699728454025410.svg)](https://discord.gg/FwXcHnX)  .
    
 If you found a bug, please report it in [issues](https://github.com/flotiq/flotiq-wordpress-import/issues).
+
+
+## Errors
+To make your life and ours easier, we have prepared an error codes.
+
+
+### 1XX - Execution error
+  
+#### #101
+  Flotiq API bad response.
+
+#### #301
+ Problem with adding Content Object.
+
+#### #302
+ Incorrect Flotiq API key.
+
+#### #400
+ Incorrect wordpress url.
