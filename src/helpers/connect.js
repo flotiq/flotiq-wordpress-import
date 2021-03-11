@@ -4,19 +4,20 @@ const FormData = require('form-data');
 
 exports.wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
     console.log('Fetching ' + wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id');
-    try{
+    try {
         let response = await fetch(wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id', {
             method: 'GET'
         });
-    }catch (e) {
+
+        let totalCount = response.headers.get('X-WP-Total');
+        totalPages = response.headers.get('X-WP-TotalPages');
+        let responseJson = await response.json();
+        return {totalCount: totalCount, totalPages: totalPages, responseJson: responseJson}
+    } catch (e) {
         console.errorCode(400);
         console.error('Incorrect Wordpress Url');
         process.exit(1);
     }
-    let totalCount = response.headers.get('X-WP-Total');
-    totalPages = response.headers.get('X-WP-TotalPages');
-    let responseJson = await response.json();
-    return {totalCount: totalCount, totalPages: totalPages, responseJson: responseJson}
 }
 
 exports.flotiq = async (apiKey, contentTypeName, contentObject) => {
@@ -44,7 +45,7 @@ exports.flotiqMedia = async (apiKey) => {
         accept: 'application/json',
     };
     headers['X-AUTH-TOKEN'] = apiKey;
-    for(page; page <= totalPages; page++) {
+    for (page; page <= totalPages; page++) {
         console.log('Fetching ' + config.apiUrl + '/api/v1/content/_media?limit=1000&page=' + page);
         let images = await fetch(config.apiUrl + '/api/v1/content/_media?limit=1000&page=' + page, {headers: headers})
         let imagesJson = await images.json();
@@ -64,7 +65,7 @@ exports.flotiqMediaUpload = async (apiKey, contentTypeName, contentObject, image
     try {
         if (!images[contentObject.fileName]) {
             let file = await fetch(encodeURI(contentObject.url));
-            if(file.status === 200) {
+            if (file.status === 200) {
                 file = await file.buffer();
                 const form = new FormData();
                 form.append('file', file, contentObject.fileName);
