@@ -1,8 +1,9 @@
-const notify = require('../helpers/notify');
+const notify = require('../../../helpers/notify');
 const connect = require('../helpers/connect');
 const convertHelper = require('../helpers/convert');
-const pageContentType = require('../content-type-definitions/contentType5.json');
-const authorContentType = require('../content-type-definitions/contentType1.json');
+const pageContentType = require('../../../content-type-definitions/contentType5.json');
+const authorContentType = require('../../../content-type-definitions/contentType1.json');
+const {flotiq} = require('../../../helpers/flotiq');
 
 exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
     console.log('Importing pages to Flotiq');
@@ -26,7 +27,7 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
                 pagesWithParent.push(convert2(page, mediaArray));
             }
         })
-        let result = await connect.flotiq(apiKey, pageContentType.name, pagesConverted);
+        let result = await flotiq(apiKey, pageContentType.name, pagesConverted);
         notify.resultNotify(result, 'Pages from page', page);
         result = await result.json()
         imported+=result.batch_success_count;
@@ -38,7 +39,7 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
         imported = 0;
         totalPages = Math.ceil(pagesWithParent.length/25);
         for(page; page < totalPages; page++) {
-            let result = await connect.flotiq(apiKey, pageContentType.name, pagesWithParent.slice(page*25,(page+1)*25));
+            let result = await flotiq(apiKey, pageContentType.name, pagesWithParent.slice(page*25,(page+1)*25));
             notify.resultNotify(result, 'Pages with parents from page', page);
             imported++;
             console.log('Updating pages parents progress: ' + imported + '/' + pagesWithParent.length);
@@ -74,6 +75,4 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
             }] : []
         }
     }
-
-
 }

@@ -1,6 +1,7 @@
 const errorTextColor = '\x1b[31m%s\x1b[0m';
+const fs = require('fs');
 
-let console = ((oldConsole, isJson, errors, stdOut, errorObject, fs) => {
+let console = ((oldConsole, isJson, errors, stdOut, errorObject) => {
 
     process.on('exit', () => {
         if (isJson) {

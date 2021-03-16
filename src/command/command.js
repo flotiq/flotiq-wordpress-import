@@ -2,41 +2,19 @@
 
 const inquirer = require("inquirer");
 const yargs = require('yargs');
-const content_type_definitions = require('../importer/content-type-definitions');
-const author = require('../importer/author');
-const category = require('../importer/category');
-const custom = require('../console/console');
-const tag = require('../importer/tag');
-const post = require('../importer/post');
-const page = require('../importer/page');
-const media = require('../importer/media');
-const fs = require('fs');
-const errors = [];
-const stdOut = [];
-let errorObject = {errorCode: 0};
-const oldConsole = console;
 
-const start = (apiKey, wordpressUrl, isJson = false) => {
-    console = custom.console(oldConsole, isJson, errors, stdOut, errorObject, fs);
-
+const run = (apiKey, wordpressUrl, isJson = false) => {
     if (wordpressUrl.charAt(wordpressUrl.length - 1) !== '/') {
         wordpressUrl += '/';
     }
-    content_type_definitions.importer(apiKey).then(async () => {
-        author.importer(apiKey, wordpressUrl).then(async () => {
-            tag.importer(apiKey, wordpressUrl).then(async () => {
-                category.importer(apiKey, wordpressUrl).then(async () => {
-                    media.importer(apiKey, wordpressUrl).then(async (mediaArray) => {
-                        await post.importer(apiKey, wordpressUrl, mediaArray);
-                        await page.importer(apiKey, wordpressUrl, mediaArray);
-                        console.log('Finished');
-                    })
-                })
-            })
-        })
-    });
-}
 
+    if (getPlatform(wordpressUrl) === 'wordpress.com') {
+        const startImport = require('../platforms/wordpress.com/import');
+    } else {
+        const startImport = require('../platforms/wordpress/import');
+    }
+    startImport(apiKey, wordpressUrl, isJson)
+}
 yargs
     .boolean('json-output')
     .alias('json-output', ['j'])
@@ -55,9 +33,9 @@ yargs
         if (yargs.argv._.length < 3) {
             const answers = await askStartQuestions();
             const {apiKey, wordpressUrl} = answers;
-            start(apiKey, wordpressUrl, yargs.argv['json-output'])
+            run(apiKey, wordpressUrl, yargs.argv['json-output'])
         } else if (yargs.argv._.length === 3) {
-            start(argv.apiKey, argv.wordpressUrl, yargs.argv['json-output'])
+            run(argv.apiKey, argv.wordpressUrl, yargs.argv['json-output'])
         } else {
             yargs.showHelp();
             process.exit(1);
@@ -90,5 +68,11 @@ async function askStartQuestions() {
     return inquirer.prompt(questions);
 }
 
+function getPlatform(wordpressUrl) {
+    if (wordpressUrl.includes('wordpress.com')) {
+        return 'wordpress.com';
+    }
+    return 'wordpress';
+}
 
-exports.start = start
+exports.run = run;
