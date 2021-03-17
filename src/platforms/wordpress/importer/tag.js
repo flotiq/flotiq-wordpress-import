@@ -1,6 +1,7 @@
-const notify = require('../helpers/notify');
+const notify = require('../../../helpers/notify');
 const connect = require('../helpers/connect');
-const tagContentType = require('../content-type-definitions/contentType2.json');
+const {flotiq} = require('../../../helpers/flotiq');
+const tagContentType = require('../../../content-type-definitions/contentType2.json');
 
 exports.importer = async (apiKey, wordpressUrl) => {
     console.log('Importing tags to Flotiq');
@@ -20,7 +21,7 @@ exports.importer = async (apiKey, wordpressUrl) => {
         responseJson.map(async (tag) => {
             tagsConverted.push(convert(tag));
         })
-        let result = await connect.flotiq(apiKey, tagContentType.name, tagsConverted);
+        let result = await flotiq(apiKey, tagContentType.name, tagsConverted);
         notify.resultNotify(result, 'Tags from page', page);
         result = await result.json()
         imported+=result.batch_success_count;

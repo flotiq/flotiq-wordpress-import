@@ -1,4 +1,4 @@
-const config = require('../configuration/config');
+const config = require('../../../configuration/config');
 
 exports.convertContent = (content, mediaArray) => {
     let convertedMediaArray = exports.convertMediaArray(mediaArray);

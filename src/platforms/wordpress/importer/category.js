@@ -1,6 +1,7 @@
-const notify = require('../helpers/notify');
+const notify = require('./../../../helpers/notify');
 const connect = require('../helpers/connect');
-const categoryContentType = require('../content-type-definitions/contentType3.json');
+const {flotiq} = require('../../../helpers/flotiq');
+const categoryContentType = require('../../../content-type-definitions/contentType3.json');
 
 exports.importer = async (apiKey, wordpressUrl) => {
     console.log('Importing categories to Flotiq');
@@ -24,7 +25,7 @@ exports.importer = async (apiKey, wordpressUrl) => {
                 categoriesWithParent.push(convert2(category));
             }
         })
-        let result = await connect.flotiq(apiKey, categoryContentType.name, categoriesConverted);
+        let result = await flotiq(apiKey, categoryContentType.name, categoriesConverted);
         notify.resultNotify(result, 'Categories from page', page);
         result = await result.json()
         imported+=result.batch_success_count;
@@ -36,7 +37,7 @@ exports.importer = async (apiKey, wordpressUrl) => {
         imported = 0;
         totalPages = Math.ceil(categoriesWithParent.length/25);
         for(page; page < totalPages; page++) {
-            let result = await connect.flotiq(apiKey, categoryContentType.name, categoriesWithParent.slice(page*25,(page+1)*25));
+            let result = await flotiq(apiKey, categoryContentType.name, categoriesWithParent.slice(page*25,(page+1)*25));
             notify.resultNotify(result, 'Categories with parents from page', page);
             imported++;
             console.log('Updating categories parents progress: ' + imported + '/' + categoriesWithParent.length);

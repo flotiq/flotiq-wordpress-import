@@ -1,6 +1,7 @@
-const notify = require('../helpers/notify');
+const notify = require('../../../helpers/notify');
+const {flotiq} = require('../../../helpers/flotiq');
 const connect = require('../helpers/connect');
-const authorContentType = require('../content-type-definitions/contentType1.json');
+const authorContentType = require('../../../content-type-definitions/contentType1.json');
 
 exports.importer = async (apiKey, wordpressUrl) => {
     console.log('Importing authors to Flotiq');
@@ -20,7 +21,7 @@ exports.importer = async (apiKey, wordpressUrl) => {
         responseJson.map(async (author) => {
             authorsConverted.push(convert(author));
         })
-        let result = await connect.flotiq(apiKey, authorContentType.name, authorsConverted);
+        let result = await flotiq(apiKey, authorContentType.name, authorsConverted);
         notify.resultNotify(result, 'Authors from page', page);
         result = await result.json()
         imported+=result.batch_success_count;

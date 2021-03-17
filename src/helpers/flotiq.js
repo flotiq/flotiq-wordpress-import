@@ -2,25 +2,7 @@ const config = require('../configuration/config');
 const fetch = require('node-fetch');
 const FormData = require('form-data');
 
-exports.wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
-    console.log('Fetching ' + wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id');
-    try {
-        let response = await fetch(wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id', {
-            method: 'GET'
-        });
-
-        let totalCount = response.headers.get('X-WP-Total');
-        totalPages = response.headers.get('X-WP-TotalPages');
-        let responseJson = await response.json();
-        return {totalCount: totalCount, totalPages: totalPages, responseJson: responseJson}
-    } catch (e) {
-        console.errorCode(400);
-        console.error('Incorrect Wordpress Url');
-        process.exit(1);
-    }
-}
-
-exports.flotiq = async (apiKey, contentTypeName, contentObject) => {
+const flotiq  = async (apiKey, contentTypeName, contentObject) => {
     let headers = {
         accept: 'application/json',
     };
@@ -36,7 +18,7 @@ exports.flotiq = async (apiKey, contentTypeName, contentObject) => {
     });
 }
 
-exports.flotiqMedia = async (apiKey) => {
+const flotiqMedia = async (apiKey) => {
     let totalPages = 1;
     let totalCount = 0;
     let page = 1;
@@ -56,7 +38,7 @@ exports.flotiqMedia = async (apiKey) => {
     return allImages;
 }
 
-exports.flotiqMediaUpload = async (apiKey, contentTypeName, contentObject, images, retry = 0) => {
+const flotiqMediaUpload = async (apiKey, contentTypeName, contentObject, images, retry = 0) => {
     let headers = {
         accept: 'application/json',
     };
@@ -93,7 +75,7 @@ exports.flotiqMediaUpload = async (apiKey, contentTypeName, contentObject, image
         }
     } catch (e) {
         if (retry < 5) {
-            return await exports.flotiqMediaUpload(apiKey, contentTypeName, contentObject, images, ++retry);
+            return await flotiqMediaUpload(apiKey, contentTypeName, contentObject, images, ++retry);
         }
     }
 
@@ -111,3 +93,5 @@ exports.flotiqMediaUpload = async (apiKey, contentTypeName, contentObject, image
         ].indexOf(mime_type) > -1
     }
 }
+
+module.exports = {flotiqMediaUpload, flotiqMedia, flotiq}

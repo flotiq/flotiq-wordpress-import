@@ -1,10 +1,11 @@
-const notify = require('../helpers/notify');
+const notify = require('../../../helpers/notify');
 const connect = require('../helpers/connect');
 const convertHelper = require('../helpers/convert');
-const postContentType = require('../content-type-definitions/contentType4.json');
-const tagContentType = require('../content-type-definitions/contentType2.json');
-const categoryContentType = require('../content-type-definitions/contentType3.json');
-const authorContentType = require('../content-type-definitions/contentType1.json');
+const postContentType = require('../../../content-type-definitions/contentType4.json');
+const tagContentType = require('../../../content-type-definitions/contentType2.json');
+const categoryContentType = require('../../../content-type-definitions/contentType3.json');
+const authorContentType = require('../../../content-type-definitions/contentType1.json');
+const {flotiq} = require('../../../helpers/flotiq');
 
 exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
     console.log('Importing posts to Flotiq');
@@ -24,7 +25,7 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
         responseJson.map(async (post) => {
             postsConverted.push(convert(post, mediaArray));
         })
-        let result = await connect.flotiq(apiKey, postContentType.name, postsConverted);
+        let result = await flotiq(apiKey, postContentType.name, postsConverted);
         notify.resultNotify(result, 'Posts from page', page);
         result = await result.json()
         imported+=result.batch_success_count;

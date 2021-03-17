@@ -1,5 +1,6 @@
-const notify = require('../helpers/notify');
-const connect = require('../helpers/connect');
+const notify = require('../../../helpers/notify');
+const connect = require('./../helpers/connect');
+const {flotiqMedia, flotiqMediaUpload} = require('../../../helpers/flotiq');
 
 exports.importer = async (apiKey, wordpressUrl) => {
     console.log('Importing media to Flotiq');
@@ -9,7 +10,7 @@ exports.importer = async (apiKey, wordpressUrl) => {
     let totalCount = 1;
     let imported = 0;
     let mediaArray = {};
-    let images = await connect.flotiqMedia(apiKey);
+    let images = await flotiqMedia(apiKey);
     images = convertImages(images);
 
     for(page; page <= totalPages; page++) {
@@ -19,7 +20,7 @@ exports.importer = async (apiKey, wordpressUrl) => {
         let responseJson = wordpressResponse.responseJson;
         await Promise.all(responseJson.map(async (media) => {
             let mediaConverted = convert(media);
-            let result = await connect.flotiqMediaUpload(apiKey, 'media', mediaConverted, images);
+            let result = await flotiqMediaUpload(apiKey, 'media', mediaConverted, images);
             notify.resultNotify(result, 'Media', mediaConverted.fileName);
             imported++;
             if(result) {
