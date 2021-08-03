@@ -28,13 +28,19 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
             }
         })
         let result = await flotiq(apiKey, pageContentType.name, pagesConverted);
-        notify.resultNotify(result, 'Pages from page', page);
+        let json;
+        let text;
         try{
-            result = await result.json()
+            text = await result.text()
+            console.log(text);
+            json = JSON.parse(text);
+
         }catch (e) {
-            console.log('Progress error');
+            console.log(text);
         }
-        imported+=result?.batch_success_count ?? 0;
+        imported+=json?.batch_success_count ?? 0;
+        notify.resultNotify(result, 'Pages from page', page);
+
         console.log('Pages progress: ' + imported + '/' + totalCount);
 
     }
