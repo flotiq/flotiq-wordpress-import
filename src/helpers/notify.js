@@ -16,7 +16,6 @@ exports.resultNotify = (response, context, name) => {
         } else {
             console.errorCode(302);
             console.error(context + ' ' + name + ' has not been added: ' + response.statusText + ' (' + response.status + ')');
-            process.exit(1);
         }
     } else {
         if (response && response.id) {
@@ -24,7 +23,6 @@ exports.resultNotify = (response, context, name) => {
         } else {
             console.errorCode(301);
             console.error(context + ': ' + name + ' has not been added');
-            process.exit(1);
         }
     }
 }
