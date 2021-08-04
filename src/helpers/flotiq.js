@@ -65,7 +65,6 @@ const flotiqMediaUpload = async (apiKey, contentTypeName, contentObject, images,
                     if (res.status < 200 || res.status >= 300) {
                         console.errorCode(101);
                         console.error(res.statusText + '(' + res.status + ')')
-                        process.exit(1);
                     }
                     return res.json()
                 });

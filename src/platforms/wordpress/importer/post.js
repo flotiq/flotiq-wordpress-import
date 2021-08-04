@@ -17,6 +17,9 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
 
     for(page; page <= totalPages; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'posts');
+        if(wordpressResponse && wordpressResponse.responseJson && wordpressResponse.totalPages){
+            continue;
+        }
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
 
@@ -26,9 +29,20 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
             postsConverted.push(convert(post, mediaArray));
         })
         let result = await flotiq(apiKey, postContentType.name, postsConverted);
+        let json;
+        let text;
+        try{
+            text = await result.text()
+            console.log(text);
+            json = JSON.parse(text);
+
+        }catch (e) {
+            console.log(text);
+        }
+        if(json && json.batch_success_count && json.errors.length === 0){
+            imported+=json.batch_success_count;
+        }
         notify.resultNotify(result, 'Posts from page', page);
-        result = await result.json()
-        imported+=result.batch_success_count;
         console.log('Posts progress: ' + imported + '/' + totalCount);
 
     }

@@ -14,6 +14,6 @@ exports.wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
     } catch (e) {
         console.errorCode(400);
         console.error('Incorrect Wordpress Url');
-        process.exit(1);
+        console.error('Skipped: ' + wordpressUrl, perPage, page, totalPages, type)
     }
 }

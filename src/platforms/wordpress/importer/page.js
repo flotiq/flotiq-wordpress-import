@@ -28,9 +28,23 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
             }
         })
         let result = await flotiq(apiKey, pageContentType.name, pagesConverted);
+        let json;
+        let text;
+        try{
+            text = await result.text()
+            console.log(text);
+            json = JSON.parse(text);
+
+        } catch (e) {
+            console.log(text);
+        }
+        if(json && json.batch_success_count && json.errors.length === 0){
+            imported+=json.batch_success_count;
+        }
+
+
         notify.resultNotify(result, 'Pages from page', page);
-        result = await result.json()
-        imported+=result.batch_success_count;
+
         console.log('Pages progress: ' + imported + '/' + totalCount);
 
     }

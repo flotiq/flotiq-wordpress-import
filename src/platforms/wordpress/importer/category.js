@@ -14,6 +14,9 @@ exports.importer = async (apiKey, wordpressUrl) => {
 
     for(page; page <= totalPages; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'categories');
+        if(wordpressResponse && wordpressResponse.responseJson && wordpressResponse.totalPages){
+            continue;
+        }
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
 
@@ -26,9 +29,21 @@ exports.importer = async (apiKey, wordpressUrl) => {
             }
         })
         let result = await flotiq(apiKey, categoryContentType.name, categoriesConverted);
+        let json;
+        let text;
+        try{
+            text = await result.text()
+            console.log(text);
+            json = JSON.parse(text);
+
+        }catch (e) {
+            console.log(text);
+        }
+        if(json && json.batch_success_count && json.errors.length === 0){
+            imported+=json.batch_success_count;
+        }
         notify.resultNotify(result, 'Categories from page', page);
-        result = await result.json()
-        imported+=result.batch_success_count;
+
         console.log('Categories progress: ' + imported + '/' + totalCount);
 
     }
