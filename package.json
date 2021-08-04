@@ -14,7 +14,7 @@
     "wordpress"
   ],
   "publishConfig": {
-    "registry":"https://npm.pkg.github.com"
+    "registry":"https://registry.npmjs.org"
   },
   "repository": "https://github.com/flotiq/flotiq-wordpress-import.git",
   "author": "Flotiq team <hello@flotiq.com>",
