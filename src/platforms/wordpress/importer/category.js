@@ -14,8 +14,11 @@ exports.importer = async (apiKey, wordpressUrl) => {
 
     for(page; page <= totalPages; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'categories');
-        totalPages = wordpressResponse?.totalPages;
-        totalCount = wordpressResponse?.totalCount;
+        if(wordpressResponse && wordpressResponse.responseJson && wordpressResponse.totalPages){
+            continue;
+        }
+        totalPages = wordpressResponse.totalPages;
+        totalCount = wordpressResponse.totalCount;
 
         let responseJson = wordpressResponse.responseJson;
         let categoriesConverted = [];

@@ -38,7 +38,11 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
         }catch (e) {
             console.log(text);
         }
-        imported+=json?.batch_success_count ?? 0;
+        if(json && json.batch_success_count){
+            imported+=json.batch_success_count;
+        }
+
+
         notify.resultNotify(result, 'Pages from page', page);
 
         console.log('Pages progress: ' + imported + '/' + totalCount);
