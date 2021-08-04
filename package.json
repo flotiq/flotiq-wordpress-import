@@ -1,6 +1,6 @@
 {
   "name": "flotiq-wordpress-import",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Importer of wordpress posts to Flotiq",
   "main": "src/command/command.js",
   "bin": {
@@ -14,7 +14,7 @@
     "wordpress"
   ],
   "publishConfig": {
-    "registry":"https://registry.npmjs.org"
+    "registry": "https://registry.npmjs.org"
   },
   "repository": "https://github.com/flotiq/flotiq-wordpress-import.git",
   "author": "Flotiq team <hello@flotiq.com>",
