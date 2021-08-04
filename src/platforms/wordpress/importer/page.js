@@ -35,10 +35,10 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
             console.log(text);
             json = JSON.parse(text);
 
-        }catch (e) {
+        } catch (e) {
             console.log(text);
         }
-        if(json && json.batch_success_count){
+        if(json && json.batch_success_count && json.errors.length === 0){
             imported+=json.batch_success_count;
         }
 

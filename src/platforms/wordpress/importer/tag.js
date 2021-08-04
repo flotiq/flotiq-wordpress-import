@@ -22,9 +22,20 @@ exports.importer = async (apiKey, wordpressUrl) => {
             tagsConverted.push(convert(tag));
         })
         let result = await flotiq(apiKey, tagContentType.name, tagsConverted);
+        let json;
+        let text;
+        try{
+            text = await result.text()
+            console.log(text);
+            json = JSON.parse(text);
+
+        }catch (e) {
+            console.log(text);
+        }
+        if(json && json.batch_success_count && json.errors.length === 0){
+            imported+=json.batch_success_count;
+        }
         notify.resultNotify(result, 'Tags from page', page);
-        result = await result.json()
-        imported+=result.batch_success_count;
         console.log('Tags progress: ' + imported + '/' + totalCount);
 
     }
