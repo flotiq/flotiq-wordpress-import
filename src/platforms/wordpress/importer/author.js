@@ -18,6 +18,17 @@ exports.importer = async (apiKey, wordpressUrl) => {
 
         let responseJson = wordpressResponse.responseJson;
         let authorsConverted = [];
+
+        if (responseJson.data.status !== 200) {
+            responseJson = [{
+                id: 1,
+                slug: 'unknown_author',
+                name: 'Unknown Author',
+                description: 'unknown author'
+            }];
+            console.log("Can't fetch authors! Created default 'unknown' author.")
+        }
+
         responseJson.map(async (author) => {
             authorsConverted.push(convert(author));
         })
