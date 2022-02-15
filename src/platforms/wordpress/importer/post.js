@@ -32,7 +32,7 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
         let json;
         let text;
         try{
-            text = await result.text()
+            text = await result.text();
             console.log(text);
             json = JSON.parse(text);
 
