@@ -75,3 +75,10 @@ To make your life and ours easier, we have prepared an error codes.
 
 #### #400
  Incorrect wordpress url.
+
+
+## NPM publish
+
+To publish a new package in NPM, you need to update the version in the packages.json file and then commit the changes with the message "Release x.y.z".
+Where x.y.z is the new version of the package.
+Commit about this on the master branch will start building a tag about this version and publishing a new version to npm.
