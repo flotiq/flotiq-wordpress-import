@@ -8,7 +8,7 @@ exports.wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
         });
 
         let totalCount = response.headers.get('X-WP-Total');
-        totalPages = response.headers.get('X-WP-TotalPages');
+        let totalPages = response.headers.get('X-WP-TotalPages');
         let responseJson = await response.json();
         return {totalCount: totalCount, totalPages: totalPages, responseJson: responseJson}
     } catch (e) {
