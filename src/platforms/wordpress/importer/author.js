@@ -19,7 +19,7 @@ exports.importer = async (apiKey, wordpressUrl) => {
         let responseJson = wordpressResponse.responseJson;
         let authorsConverted = [];
 
-        if (responseJson.data.status !== 200) {
+        if (typeof responseJson == 'undefined' || responseJson.length == 0) {
             responseJson = [{
                 id: 1,
                 slug: 'unknown_author',
