@@ -1,6 +1,6 @@
 {
   "name": "flotiq-wordpress-import",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "Importer of wordpress posts to Flotiq",
   "main": "src/command/command.js",
   "private": false,
