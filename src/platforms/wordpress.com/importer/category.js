@@ -26,9 +26,16 @@ exports.importer = async (apiKey, wordpressUrl) => {
             }
         })
         let result = await flotiq(apiKey, categoryContentType.name, categoriesConverted);
-        notify.resultNotify(result, 'Categories from page', page);
-        result = await result.json()
-        imported+=result.batch_success_count;
+        let json;
+        try {
+            json = await result.json();
+        } catch (e) {
+            console.error('Error parsing response:', e);
+        }
+        notify.resultNotify(result, 'Categories from page', page, json);
+        if (json) {
+            imported += json.batch_success_count;
+        }
         console.log('Categories progress: ' + imported + '/' + totalCount);
 
     }
@@ -38,7 +45,13 @@ exports.importer = async (apiKey, wordpressUrl) => {
         totalPages = Math.ceil(categoriesWithParent.length/25);
         for(page; page < totalPages; page++) {
             let result = await flotiq(apiKey, categoryContentType.name, categoriesWithParent.slice(page*25,(page+1)*25));
-            notify.resultNotify(result, 'Categories with parents from page', page);
+            let json;
+            try {
+                json = await result.json();
+            } catch (e) {
+                console.error('Error parsing response:', e);
+            }
+            notify.resultNotify(result, 'Categories with parents from page', page, json);
             imported++;
             console.log('Updating categories parents progress: ' + imported + '/' + categoriesWithParent.length);
         }

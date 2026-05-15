@@ -11,7 +11,7 @@ exports.importer = async (apiKey, wordpressUrl) => {
     let totalCount = 1;
     let imported = 0;
 
-    for(page; page <= totalPages; page++) {
+    for (page; page <= totalPages; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'tags');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -21,23 +21,25 @@ exports.importer = async (apiKey, wordpressUrl) => {
         responseJson.map(async (tag) => {
             tagsConverted.push(convert(tag));
         })
+        if (!tagsConverted.length) {
+            break;
+        }
         let result = await flotiq(apiKey, tagContentType.name, tagsConverted);
         let json;
         let text;
-        try{
+        try {
             text = await result.text()
             console.log(text);
             json = JSON.parse(text);
 
-        }catch (e) {
+        } catch (e) {
             console.log(text);
         }
-        if(json && json.batch_success_count && json.errors.length === 0){
-            imported+=json.batch_success_count;
+        if (json && json.batch_success_count && json.errors.length === 0) {
+            imported += json.batch_success_count;
         }
-        notify.resultNotify(result, 'Tags from page', page);
+        notify.resultNotify(result, 'Tags from page', page, json);
         console.log('Tags progress: ' + imported + '/' + totalCount);
-
     }
 
     function convert(tag) {

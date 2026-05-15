@@ -1,14 +1,12 @@
 const config = require('../configuration/config');
-const fetch = require('node-fetch');
+const FlotiqApi = require('flotiq-api');
 const notify = require('../helpers/notify');
 
-let headers = {
-    accept: 'application/json',
-};
+const { getFlotiqApi } = FlotiqApi;
 
 exports.importer = async (apiKey) => {
     console.log('Importing content type definitions to Flotiq');
-    headers['X-AUTH-TOKEN'] = apiKey;
+    const client = getFlotiqApi(config.getApiBaseUrl(), apiKey);
 
     let contentDefinitions = [
         require('../content-type-definitions/contentType1.json'),
@@ -19,15 +17,11 @@ exports.importer = async (apiKey) => {
     ]
 
     await Promise.all(contentDefinitions.map(async function (contentDefinition) {
-        await importContentTypedDefinitions(contentDefinition, headers);
+        await importContentTypedDefinitions(contentDefinition);
     }));
 
-    async function importContentTypedDefinitions(contentDefinition, headers) {
-        let result = await fetch(config.apiUrl + '/api/v1/internal/contenttype', {
-            method: 'POST',
-            body: JSON.stringify(contentDefinition),
-            headers: {...headers, 'Content-Type': 'application/json'},
-        });
+    async function importContentTypedDefinitions(contentDefinition) {
+        let result = await client.createOrUpdate(null, structuredClone(contentDefinition));
         notify.resultNotify(result, 'Definition', contentDefinition.name);
         return contentDefinition.name;
     }

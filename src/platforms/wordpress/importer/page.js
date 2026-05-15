@@ -43,7 +43,7 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
         }
 
 
-        notify.resultNotify(result, 'Pages from page', page);
+        notify.resultNotify(result, 'Pages from page', page, json);
 
         console.log('Pages progress: ' + imported + '/' + totalCount);
 
@@ -54,13 +54,28 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
         totalPages = Math.ceil(pagesWithParent.length/25);
         for(page; page < totalPages; page++) {
             let result = await flotiq(apiKey, pageContentType.name, pagesWithParent.slice(page*25,(page+1)*25));
-            notify.resultNotify(result, 'Pages with parents from page', page);
+            let json;
+            let text;
+            try {
+                text = await result.text();
+                json = JSON.parse(text);
+            } catch (e) {
+                console.log(text);
+            }
+            notify.resultNotify(result, 'Pages with parents from page', page, json);
             imported++;
             console.log('Updating pages parents progress: ' + imported + '/' + pagesWithParent.length);
         }
     }
 
     function convert(page, mediaArray) {
+        let content = convertHelper.convertContent(page.content.rendered, mediaArray);
+        
+        // Add placeholder if featured media is not available
+        if (page.featured_media && !mediaArray[page.featured_media]) {
+            content += '\n\n[Placeholder Image - Featured image was not uploaded]';
+        }
+        
         return {
             id: pageContentType.name + '_' + page.id,
             slug: page.slug,
@@ -68,7 +83,7 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
             status: page.status,
             created: page.date,
             modified: page.modified,
-            content: convertHelper.convertContent(page.content.rendered, mediaArray),
+            content: content,
             author: [{
                 type: 'internal',
                 dataUrl: '/api/v1/content/' + authorContentType.name + '/' + authorContentType.name + '_' + page.author

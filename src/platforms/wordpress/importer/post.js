@@ -42,7 +42,7 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
         if(json && json.batch_success_count && json.errors.length === 0){
             imported+=json.batch_success_count;
         }
-        notify.resultNotify(result, 'Posts from page', page);
+        notify.resultNotify(result, 'Posts from page', page, json);
         console.log('Posts progress: ' + imported + '/' + totalCount);
 
     }
@@ -60,6 +60,14 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
                 dataUrl: '/api/v1/content/' + categoryContentType.name + '/' + categoryContentType.name + '_' + category
             };
         }) : [];
+        
+        let content = convertHelper.convertContent(post.content.rendered, mediaArray);
+        
+        // Add placeholder if featured media is not available
+        if (post.featured_media && !mediaArray[post.featured_media]) {
+            content += '\n\n[Placeholder Image - Featured image was not uploaded]';
+        }
+        
         return {
             id: postContentType.name + '_' + post.id,
             slug: post.slug,
@@ -68,7 +76,7 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
             type: post.type,
             created: post.date,
             modified: post.modified,
-            content: convertHelper.convertContent(post.content.rendered, mediaArray),
+            content: content,
             excerpt: post.excerpt.rendered,
             author: [{
                 type: 'internal',

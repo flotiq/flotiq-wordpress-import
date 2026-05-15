@@ -21,6 +21,7 @@
   "author": "Flotiq team <hello@flotiq.com>",
   "license": "MIT",
   "dependencies": {
+    "flotiq-api": "https://github.com/flotiq/flotiq-api.git",
     "form-data": "^3.0.0",
     "inquirer": "^7.3.0",
     "node-fetch": "^2.6.0",

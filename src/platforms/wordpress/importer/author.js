@@ -37,16 +37,16 @@ exports.importer = async (apiKey, wordpressUrl) => {
         let text;
         try{
             text = await result.text()
-            console.log(text);
+            // console.log(text);
             json = JSON.parse(text);
 
         }catch (e) {
-            console.log(text);
+            console.log(authorContentType.name);
         }
         if(json && json.batch_success_count && json.errors.length === 0){
             imported+=json.batch_success_count;
         }
-        notify.resultNotify(result, 'Authors from page', page);
+        notify.resultNotify(result, 'Authors from page', page, json);
 
         console.log('Authors progress: ' + imported + '/' + totalCount);
 

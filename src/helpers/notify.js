@@ -1,15 +1,15 @@
 
-exports.resultNotify = (response, context, name) => {
+exports.resultNotify = (response, context, name, parsedData = null) => {
+    console.log(response);
     if(context !== 'Media') {
         if (response.status === 400) {
-            console.log(response.json().then((data) => {
-                if(data.errors && data.errors[0]) {
-                    console.errorCode(101);
-                    console.error(data.errors[0].errors);
-                } else {
-                    console.log(data);
-                }
-            }));
+            const errorData = parsedData || response;
+            if(errorData.errors && errorData.errors[0]) {
+                console.errorCode(101);
+                console.error(errorData.errors[0].errors);
+            } else {
+                console.log(errorData);
+            }
             console.log(context + ' ' + name + ' has not been added.');
         } else if (response.status === 200) {
             console.log(context + ' ' + name + ' added');

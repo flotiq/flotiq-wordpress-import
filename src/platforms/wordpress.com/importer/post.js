@@ -33,9 +33,16 @@ exports.importer = async (apiKey, wordpressUrl) => {
         await addAuthors(posts);
 
         let result = await flotiq(apiKey, postContentType.name, postsConverted);
-        notify.resultNotify(result, 'Posts from page', page);
-        result = await result.json()
-        imported+=result.batch_success_count;
+        let json;
+        try {
+            json = await result.json();
+        } catch (e) {
+            console.error('Error parsing response:', e);
+        }
+        notify.resultNotify(result, 'Posts from page', page, json);
+        if (json) {
+            imported += json.batch_success_count;
+        }
         console.log('Posts progress: ' + imported + '/' + totalCount);
 
     }

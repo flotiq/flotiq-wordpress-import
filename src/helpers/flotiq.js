@@ -1,6 +1,24 @@
 const config = require('../configuration/config');
-const fetch = require('node-fetch');
-const FormData = require('form-data');
+const FlotiqApi = require('flotiq-api');
+
+const { getFlotiqApi } = FlotiqApi;
+
+const getClient = (apiKey) => getFlotiqApi(config.getApiBaseUrl(), apiKey);
+
+const wrapResponse = (response) => ({
+    ok: response.status >= 200 && response.status < 300,
+    status: response.status,
+    statusText: response.statusText,
+    data: response.data,
+    text: async () => {
+        if (typeof response.data === 'string') {
+            return response.data;
+        }
+
+        return JSON.stringify(response.data);
+    },
+    json: async () => response.data,
+});
 
 const flotiq  = async (apiKey, contentTypeName, contentObject) => {
     let headers = {
@@ -9,7 +27,7 @@ const flotiq  = async (apiKey, contentTypeName, contentObject) => {
     headers['X-AUTH-TOKEN'] = apiKey;
 
     let method = 'POST';
-    let url = config.apiUrl + '/api/v1/content/' + contentTypeName + '/batch?updateExisting=true';
+    let url = config.getApiBaseUrl() + '/content/' + contentTypeName + '/batch?updateExisting=true';
 
     return await fetch(url, {
         method: method,
@@ -19,77 +37,26 @@ const flotiq  = async (apiKey, contentTypeName, contentObject) => {
 }
 
 const flotiqMedia = async (apiKey) => {
-    let totalPages = 1;
-    let totalCount = 0;
-    let page = 1;
-    let allImages = [];
-    let headers = {
-        accept: 'application/json',
-    };
-    headers['X-AUTH-TOKEN'] = apiKey;
-    for (page; page <= totalPages; page++) {
-        console.log('Fetching ' + config.apiUrl + '/api/v1/content/_media?limit=1000&page=' + page);
-        let images = await fetch(config.apiUrl + '/api/v1/content/_media?limit=1000&page=' + page, {headers: headers})
-        let imagesJson = await images.json();
-        totalCount = imagesJson.total_count;
-        totalPages = imagesJson.total_pages;
-        allImages = [...allImages, ...imagesJson.data];
-    }
-    return allImages;
+    const client = getClient(apiKey);
+
+    return await client.fetchContentObjects('_media');
 }
 
 const flotiqMediaUpload = async (apiKey, contentTypeName, contentObject, images, retry = 0) => {
-    let headers = {
-        accept: 'application/json',
-    };
-    headers['X-AUTH-TOKEN'] = apiKey;
-
     try {
-        if (!images[contentObject.fileName]) {
-            let file = await fetch(encodeURI(contentObject.url));
-            if (file.status === 200) {
-                file = await file.buffer();
-                const form = new FormData();
-                form.append('file', file, contentObject.fileName);
-                if (imageMimeType(contentObject.mime_type)) {
-                    form.append('type', 'image');
-                } else {
-                    form.append('type', 'file');
-                }
-                form.append('save', '1');
-                return await fetch(config.apiUrl + '/api/media', {
-                    method: 'POST',
-                    body: form,
-                    headers: headers,
-                }).then(async res => {
-                    if (res.status < 200 || res.status >= 300) {
-                        console.errorCode(101);
-                        console.error(res.statusText + '(' + res.status + ')')
-                    }
-                    return res.json()
-                });
-            }
-        } else {
+        const client = getClient(apiKey);
+
+        if (images[contentObject.fileName]) {
             return images[contentObject.fileName];
         }
+
+        return await client.uploadMediaFromUrl(contentObject, images);
     } catch (e) {
         if (retry < 5) {
             return await flotiqMediaUpload(apiKey, contentTypeName, contentObject, images, ++retry);
         }
-    }
 
-    function imageMimeType(mime_type) {
-        return [
-            "image/jpeg",
-            "image/png",
-            "image/apng",
-            "image/bmp",
-            "image/gif",
-            "image/x-icon",
-            "image/svg+xml",
-            "image/tiff",
-            "image/webp"
-        ].indexOf(mime_type) > -1
+        throw e;
     }
 }
 

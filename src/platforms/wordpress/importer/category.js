@@ -39,7 +39,7 @@ exports.importer = async (apiKey, wordpressUrl) => {
         if(json && json.batch_success_count && json.errors.length === 0){
             imported+=json.batch_success_count;
         }
-        notify.resultNotify(result, 'Categories from page', page);
+        notify.resultNotify(result, 'Categories from page', page, json);
 
         console.log('Categories progress: ' + imported + '/' + totalCount);
 
@@ -50,7 +50,15 @@ exports.importer = async (apiKey, wordpressUrl) => {
         totalPages = Math.ceil(categoriesWithParent.length/25);
         for(page; page < totalPages; page++) {
             let result = await flotiq(apiKey, categoryContentType.name, categoriesWithParent.slice(page*25,(page+1)*25));
-            notify.resultNotify(result, 'Categories with parents from page', page);
+            let json;
+            let text;
+            try {
+                text = await result.text();
+                json = JSON.parse(text);
+            } catch (e) {
+                console.log(text);
+            }
+            notify.resultNotify(result, 'Categories with parents from page', page, json);
             imported++;
             console.log('Updating categories parents progress: ' + imported + '/' + categoriesWithParent.length);
         }
