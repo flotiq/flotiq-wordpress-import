@@ -8,7 +8,7 @@
     "flotiq-wordpress-import": "bin/flotiq-wordpress-import"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run"
   },
   "keywords": [
     "flotiq",
@@ -25,5 +25,8 @@
     "inquirer": "^7.3.0",
     "node-fetch": "^2.6.0",
     "yargs": "^15.3.1"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
   }
 }
