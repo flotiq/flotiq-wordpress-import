@@ -1,9 +1,9 @@
-const notify = require('./../../../helpers/notify');
-const connect = require('../helpers/connect');
-const {flotiq} = require('../../../helpers/flotiq');
-const categoryContentType = require('../../../content-type-definitions/contentType3.json');
+import * as notify from './../../../helpers/notify.js';
+import * as connect from '../helpers/connect.js';
+import { flotiq } from '../../../helpers/flotiq.js';
+import categoryContentType from '../../../content-type-definitions/contentType3.json' with { type: 'json' };
 
-exports.importer = async (apiKey, wordpressUrl) => {
+export const importer = async (apiKey, wordpressUrl) => {
     console.log('Importing categories to Flotiq');
     let perPage = 25;
     let page = 1;
@@ -82,4 +82,4 @@ exports.importer = async (apiKey, wordpressUrl) => {
             }] : []
         }
     }
-}
+};

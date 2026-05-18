@@ -1,27 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRequire } from 'node:module';
+import config from '../src/configuration/config.js';
+import contentType1 from '../src/content-type-definitions/contentType1.json' with { type: 'json' };
+import contentType2 from '../src/content-type-definitions/contentType2.json' with { type: 'json' };
+import contentType3 from '../src/content-type-definitions/contentType3.json' with { type: 'json' };
+import contentType4 from '../src/content-type-definitions/contentType4.json' with { type: 'json' };
+import contentType5 from '../src/content-type-definitions/contentType5.json' with { type: 'json' };
 
-const require = createRequire(import.meta.url);
-const config = require('../src/configuration/config');
-const definitions = [
-    require('../src/content-type-definitions/contentType1.json'),
-    require('../src/content-type-definitions/contentType2.json'),
-    require('../src/content-type-definitions/contentType3.json'),
-    require('../src/content-type-definitions/contentType4.json'),
-    require('../src/content-type-definitions/contentType5.json'),
-];
+const definitions = [contentType1, contentType2, contentType3, contentType4, contentType5];
 
-const createOrUpdateMock = vi.fn();
-const getFlotiqApiMock = vi.fn();
-const notifyMock = vi.fn();
-const flotiqApiModulePath = require.resolve('flotiq-api');
-const notifyModulePath = require.resolve('../src/helpers/notify');
+const { createOrUpdateMock, getFlotiqApiMock, notifyMock } = vi.hoisted(() => ({
+    createOrUpdateMock: vi.fn(),
+    getFlotiqApiMock: vi.fn(),
+    notifyMock: vi.fn(),
+}));
 
-const originalFlotiqApiModule = require.cache[flotiqApiModulePath];
-const originalNotifyModule = require.cache[notifyModulePath];
+vi.mock('flotiq-api', () => ({
+    default: {
+        getFlotiqApi: getFlotiqApiMock,
+    },
+}));
+
+vi.mock('../src/helpers/notify.js', () => ({
+    resultNotify: notifyMock,
+}));
 
 describe('content type definitions importer', () => {
     beforeEach(() => {
+        vi.resetModules();
         config.apiUrl = 'https://api.flotiq.com';
         createOrUpdateMock.mockReset();
         getFlotiqApiMock.mockReset();
@@ -30,39 +35,14 @@ describe('content type definitions importer', () => {
         getFlotiqApiMock.mockReturnValue({
             createOrUpdate: createOrUpdateMock,
         });
-        require.cache[flotiqApiModulePath] = {
-            id: flotiqApiModulePath,
-            filename: flotiqApiModulePath,
-            loaded: true,
-            exports: {
-                getFlotiqApi: getFlotiqApiMock,
-            },
-        };
-        require.cache[notifyModulePath] = {
-            id: notifyModulePath,
-            filename: notifyModulePath,
-            loaded: true,
-            exports: { resultNotify: notifyMock },
-        };
-        delete require.cache[require.resolve('../src/helpers/content-type-definitions')];
     });
 
     afterEach(() => {
         vi.clearAllMocks();
-        if (originalFlotiqApiModule) {
-            require.cache[flotiqApiModulePath] = originalFlotiqApiModule;
-        } else {
-            delete require.cache[flotiqApiModulePath];
-        }
-        if (originalNotifyModule) {
-            require.cache[notifyModulePath] = originalNotifyModule;
-        } else {
-            delete require.cache[notifyModulePath];
-        }
     });
 
     it('posts every bundled content type definition to Flotiq', async () => {
-        const { importer } = require('../src/helpers/content-type-definitions');
+        const { importer } = await import('../src/helpers/content-type-definitions.js');
 
         await importer('test-api-key');
 

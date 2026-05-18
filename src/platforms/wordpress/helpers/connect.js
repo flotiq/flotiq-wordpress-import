@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 const FETCH_TIMEOUT = 30000; // 30 seconds
 const MAX_RETRIES = 3;
@@ -33,7 +33,7 @@ const fetchWithRetry = async (url, options, retryCount = 0) => {
     }
 };
 
-exports.wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
+export const wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
     console.log('Fetching ' + wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id');
     try {
         let response = await fetchWithRetry(wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id', {
@@ -49,4 +49,4 @@ exports.wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
         console.error('Error fetching from Wordpress URL: ' + wordpressUrl);
         console.error('Skipped: ' + wordpressUrl, perPage, page, totalPages, type)
     }
-}
+};

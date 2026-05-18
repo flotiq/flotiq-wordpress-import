@@ -1,8 +1,7 @@
+import fetch from 'node-fetch';
 
-const fetch = require('node-fetch');
 
-
-exports.wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
+export const wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
     const site = wordpressUrl.replace('https://', '');
     let url = `https://public-api.wordpress.com/rest/v1.1/sites/${site}/${type}?number=${perPage}&page=${page}&order_by=ID`
     url = url.replace("com//", 'com/');
@@ -22,7 +21,7 @@ exports.wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
         console.error('Incorrect Wordpress Url');
         console.error('Skipped: ' + wordpressUrl)
     }
-}
+};
 
 
 

@@ -1,7 +1,8 @@
-const errorTextColor = '\x1b[31m%s\x1b[0m';
-const fs = require('fs');
+import fs from 'node:fs';
 
-let console = ((oldConsole, isJson, errors, stdOut, errorObject) => {
+const errorTextColor = '\x1b[31m%s\x1b[0m';
+
+const customConsole = ((oldConsole, isJson, errors, stdOut, errorObject) => {
 
     process.on('exit', () => {
         if (isJson) {
@@ -55,6 +56,4 @@ const removeColorsAndBrakeLines = (data) => {
     }
     return returnData;
 }
-module.exports = {
-    console
-}
+export { customConsole as console };

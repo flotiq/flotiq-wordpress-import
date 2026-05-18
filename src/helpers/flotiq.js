@@ -1,5 +1,5 @@
-const config = require('../configuration/config');
-const FlotiqApi = require('flotiq-api');
+import config from '../configuration/config.js';
+import FlotiqApi from 'flotiq-api';
 
 const { getFlotiqApi } = FlotiqApi;
 
@@ -60,4 +60,4 @@ const flotiqMediaUpload = async (apiKey, contentTypeName, contentObject, images,
     }
 }
 
-module.exports = {flotiqMediaUpload, flotiqMedia, flotiq}
+export { flotiqMediaUpload, flotiqMedia, flotiq };

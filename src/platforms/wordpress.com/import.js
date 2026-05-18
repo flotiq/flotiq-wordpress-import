@@ -1,17 +1,17 @@
-const content_type_definitions = require('./../../helpers/content-type-definitions');
-const category = require('./importer/category');
-const custom = require('./../../console/console');
-const tag = require('./importer/tag');
-const post = require('./importer/post');
+import * as contentTypeDefinitions from './../../helpers/content-type-definitions.js';
+import * as category from './importer/category.js';
+import * as custom from './../../console/console.js';
+import * as tag from './importer/tag.js';
+import * as post from './importer/post.js';
 const errors = [];
 const stdOut = [];
 let errorObject = {errorCode: 0};
 const oldConsole = console;
 
-module.exports = startImport = (apiKey, wordpressUrl, isJson = false) => {
+const startImport = (apiKey, wordpressUrl, isJson = false) => {
     console = custom.console(oldConsole, isJson, errors, stdOut, errorObject);
 
-    content_type_definitions.importer(apiKey).then(async () => {
+    contentTypeDefinitions.importer(apiKey).then(async () => {
         tag.importer(apiKey, wordpressUrl).then(async () => {
             category.importer(apiKey, wordpressUrl).then(async () => {
                 await post.importer(apiKey, wordpressUrl);
@@ -19,4 +19,6 @@ module.exports = startImport = (apiKey, wordpressUrl, isJson = false) => {
             })
         })
     });
-}
+};
+
+export default startImport;

@@ -1,8 +1,8 @@
-const notify = require('../../../helpers/notify');
-const connect = require('./../helpers/connect');
-const {flotiqMedia, flotiqMediaUpload} = require('../../../helpers/flotiq');
+import * as notify from '../../../helpers/notify.js';
+import * as connect from './../helpers/connect.js';
+import { flotiqMedia, flotiqMediaUpload } from '../../../helpers/flotiq.js';
 
-exports.importer = async (apiKey, wordpressUrl) => {
+export const importer = async (apiKey, wordpressUrl) => {
     console.log('Importing media to Flotiq');
     let perPage = 100;
     let page = 1;

@@ -1,12 +1,12 @@
-const notify = require('../../../helpers/notify');
-const connect = require('../helpers/connect');
-const postContentType = require('../../../content-type-definitions/contentType4.json');
-const tagContentType = require('../../../content-type-definitions/contentType2.json');
-const categoryContentType = require('../../../content-type-definitions/contentType3.json');
-const authorContentType = require('../../../content-type-definitions/contentType1.json');
-const {flotiq} = require('../../../helpers/flotiq');
+import * as notify from '../../../helpers/notify.js';
+import * as connect from '../helpers/connect.js';
+import postContentType from '../../../content-type-definitions/contentType4.json' with { type: 'json' };
+import tagContentType from '../../../content-type-definitions/contentType2.json' with { type: 'json' };
+import categoryContentType from '../../../content-type-definitions/contentType3.json' with { type: 'json' };
+import authorContentType from '../../../content-type-definitions/contentType1.json' with { type: 'json' };
+import { flotiq } from '../../../helpers/flotiq.js';
 
-exports.importer = async (apiKey, wordpressUrl) => {
+export const importer = async (apiKey, wordpressUrl) => {
     console.log('Importing posts to Flotiq');
     let perPage = 25;
     let page = 1;
@@ -109,4 +109,4 @@ exports.importer = async (apiKey, wordpressUrl) => {
             categories: categories
         }
     }
-}
+};

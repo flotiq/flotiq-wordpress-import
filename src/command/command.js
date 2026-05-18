@@ -1,18 +1,19 @@
 #!/usr/bin/env node
 
-const inquirer = require("inquirer");
-const yargs = require('yargs');
+import inquirer from 'inquirer';
+import yargs from 'yargs';
+import startImportWordpressCom from '../platforms/wordpress.com/import.js';
+import startImportWordpress from '../platforms/wordpress/import.js';
 
 const run = (apiKey, wordpressUrl, isJson = false) => {
     if (wordpressUrl.charAt(wordpressUrl.length - 1) !== '/') {
         wordpressUrl += '/';
     }
 
-    if (getPlatform(wordpressUrl) === 'wordpress.com') {
-        const startImport = require('../platforms/wordpress.com/import');
-    } else {
-        const startImport = require('../platforms/wordpress/import');
-    }
+    const startImport = getPlatform(wordpressUrl) === 'wordpress.com'
+        ? startImportWordpressCom
+        : startImportWordpress;
+
     startImport(apiKey, wordpressUrl, isJson)
 }
 yargs
@@ -75,4 +76,4 @@ function getPlatform(wordpressUrl) {
     return 'wordpress';
 }
 
-exports.run = run;
+export { run };

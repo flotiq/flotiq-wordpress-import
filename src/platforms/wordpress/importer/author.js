@@ -1,9 +1,9 @@
-const notify = require('../../../helpers/notify');
-const {flotiq} = require('../../../helpers/flotiq');
-const connect = require('../helpers/connect');
-const authorContentType = require('../../../content-type-definitions/contentType1.json');
+import * as notify from '../../../helpers/notify.js';
+import { flotiq } from '../../../helpers/flotiq.js';
+import * as connect from '../helpers/connect.js';
+import authorContentType from '../../../content-type-definitions/contentType1.json' with { type: 'json' };
 
-exports.importer = async (apiKey, wordpressUrl) => {
+export const importer = async (apiKey, wordpressUrl) => {
     console.log('Importing authors to Flotiq');
     let perPage = 25;
     let page = 1;
@@ -60,4 +60,4 @@ exports.importer = async (apiKey, wordpressUrl) => {
             description: author.description
         }
     }
-}
+};

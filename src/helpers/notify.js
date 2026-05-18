@@ -1,5 +1,4 @@
-
-exports.resultNotify = (response, context, name, parsedData = null) => {
+export const resultNotify = (response, context, name, parsedData = null) => {
     console.log(response);
     if(context !== 'Media') {
         if (response.status === 400) {
@@ -25,4 +24,4 @@ exports.resultNotify = (response, context, name, parsedData = null) => {
             console.error(context + ': ' + name + ' has not been added');
         }
     }
-}
+};

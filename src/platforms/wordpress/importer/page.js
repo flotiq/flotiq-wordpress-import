@@ -1,11 +1,11 @@
-const notify = require('../../../helpers/notify');
-const connect = require('../helpers/connect');
-const convertHelper = require('../helpers/convert');
-const pageContentType = require('../../../content-type-definitions/contentType5.json');
-const authorContentType = require('../../../content-type-definitions/contentType1.json');
-const {flotiq} = require('../../../helpers/flotiq');
+import * as notify from '../../../helpers/notify.js';
+import * as connect from '../helpers/connect.js';
+import * as convertHelper from '../helpers/convert.js';
+import pageContentType from '../../../content-type-definitions/contentType5.json' with { type: 'json' };
+import authorContentType from '../../../content-type-definitions/contentType1.json' with { type: 'json' };
+import { flotiq } from '../../../helpers/flotiq.js';
 
-exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
+export const importer = async (apiKey, wordpressUrl, mediaArray) => {
     console.log('Importing pages to Flotiq');
     let perPage = 25;
     let page = 1;
@@ -104,4 +104,4 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
             }] : []
         }
     }
-}
+};

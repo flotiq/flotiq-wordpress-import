@@ -4,5 +4,7 @@ let settings = {
 
 const getApiBaseUrl = () => settings.apiUrl.replace(/\/+$/, '').replace(/\/api(?:\/v1)?$/, '') + '/api/v1';
 
-module.exports = settings;
-module.exports.getApiBaseUrl = getApiBaseUrl;
+settings.getApiBaseUrl = getApiBaseUrl;
+
+export { getApiBaseUrl };
+export default settings;
