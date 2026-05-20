@@ -1,6 +1,6 @@
 import * as notify from '../../../helpers/notify.js';
 import * as connect from './../helpers/connect.js';
-import { getFlotiqApi } from "@flotiq/api";
+import {getFlotiqApi} from "@flotiq/api";
 import logger from "@flotiq/api/src/logger.js";
 import config from "../../../configuration/config.js";
 
@@ -34,34 +34,34 @@ export const importer = async (apiKey, wordpressUrl) => {
     let images = await fetchFlotiqMedia(flotiqClient);
     images = convertImages(images);
 
-    for(page; page <= totalPages && !quotaExceeded; page++) {
+    for (page; page <= totalPages && !quotaExceeded; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'media');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
         let responseJson = wordpressResponse.responseJson;
-        
+
         // Upload media sequentially instead of in parallel to allow stopping on quota exceeded
         for (let media of responseJson) {
             if (quotaExceeded) break;
-            
+
             let mediaConverted = convert(media);
             try {
                 let result = await uploadMediaWithRetry(flotiqClient, mediaConverted, images);
                 notify.resultNotify(result, 'Media', mediaConverted.fileName);
                 imported++;
-                if(result) {
+                if (result) {
                     mediaArray[media.id] = result.data ? result.data[0] : result;
                     mediaArray[media.id].sizes = media.media_details && media.media_details.sizes ? media.media_details.sizes : {size: {source_url: media.guid.rendered}};
                 }
             } catch (error) {
                 // Check for quota exceeded error (403 status or quota_exceeded in error message/data)
-                const isQuotaExceeded = 
+                const isQuotaExceeded =
                     error.response?.status === 403 ||
                     error.response?.data?.error?.includes('quota') ||
                     error.response?.data?.message?.includes('quota') ||
                     error.message?.includes('quota') ||
                     JSON.stringify(error).includes('quota');
-                
+
                 if (isQuotaExceeded) {
                     console.error('Quota exceeded. Stopping media uploads.');
                     quotaExceeded = true;
@@ -71,7 +71,7 @@ export const importer = async (apiKey, wordpressUrl) => {
                 }
             }
         }
-        
+
         if (quotaExceeded) break;
         console.log('Media progress: ' + imported + '/' + totalCount);
     }
@@ -84,7 +84,7 @@ const fetchFlotiqMedia = async (client) => {
 };
 
 function convert(media) {
-    if(media.media_details && media.media_details.sizes && media.media_details.sizes.full) {
+    if (media.media_details && media.media_details.sizes && media.media_details.sizes.full) {
         return {
             fileName: media.media_details.sizes.full.file,
             url: media.media_details.sizes.full.source_url,

@@ -11,7 +11,6 @@ export const importer = async (apiKey, wordpressUrl) => {
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
-    0;
     let categoriesWithParent = [];
 
     for (page; page <= totalPages; page++) {

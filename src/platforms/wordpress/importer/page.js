@@ -1,8 +1,8 @@
 import * as connect from '../helpers/connect.js';
 import * as convertHelper from '../helpers/convert.js';
-import pageContentType from '../../../content-type-definitions/contentType5.json' with { type: 'json' };
-import authorContentType from '../../../content-type-definitions/contentType1.json' with { type: 'json' };
-import { getFlotiqApi } from '@flotiq/api';
+import pageContentType from '../../../content-type-definitions/contentType5.json' with {type: 'json'};
+import authorContentType from '../../../content-type-definitions/contentType1.json' with {type: 'json'};
+import {getFlotiqApi} from '@flotiq/api';
 import logger from '@flotiq/api/src/logger.js';
 import config from '../../../configuration/config.js';
 
@@ -27,7 +27,7 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
     let imported = 0;
     let pagesWithParent = [];
 
-    for(page; page <= totalPages; page++) {
+    for (page; page <= totalPages; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'pages');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -36,19 +36,19 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
         let pagesConverted = [];
         responseJson.map(async (page) => {
             pagesConverted.push(convert(page, mediaArray));
-            if(page.parent) {
+            if (page.parent) {
                 pagesWithParent.push(convert2(page, mediaArray));
             }
         })
         await uploadBatch(flotiqClient, pageContentType.name, pagesConverted);
     }
 
-    if(pagesWithParent.length) {
+    if (pagesWithParent.length) {
         page = 0;
         imported = 0;
-        totalPages = Math.ceil(pagesWithParent.length/25);
-        for(page; page < totalPages; page++) {
-            await uploadBatch(flotiqClient, pageContentType.name, pagesWithParent.slice(page*25,(page+1)*25));
+        totalPages = Math.ceil(pagesWithParent.length / 25);
+        for (page; page < totalPages; page++) {
+            await uploadBatch(flotiqClient, pageContentType.name, pagesWithParent.slice(page * 25, (page + 1) * 25));
             imported++;
             logger.info('Updating pages parents progress: ' + imported + '/' + pagesWithParent.length);
         }
@@ -56,29 +56,29 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
 };
 
 function convert(page, mediaArray) {
-        let content = convertHelper.convertContent(page.content.rendered, mediaArray);
-        
-        // Add placeholder if featured media is not available
-        if (page.featured_media && !mediaArray[page.featured_media]) {
-            content += '\n\n[Placeholder Image - Featured image was not uploaded]';
-        }
-        
-        return {
-            id: pageContentType.name + '_' + page.id,
-            slug: page.slug,
-            title: page.title.rendered,
-            status: page.status,
-            created: page.date,
-            modified: page.modified,
-            content: content,
-            author: [{
-                type: 'internal',
-                dataUrl: '/api/v1/content/' + authorContentType.name + '/' + authorContentType.name + '_' + page.author
-            }],
-            featuredMedia: page.featured_media && mediaArray[page.featured_media] ? [{
-                type: 'internal',
-                dataUrl: '/api/v1/content/_media/' + mediaArray[page.featured_media].id
-            }] : []
+    let content = convertHelper.convertContent(page.content.rendered, mediaArray);
+
+    // Add placeholder if featured media is not available
+    if (page.featured_media && !mediaArray[page.featured_media]) {
+        content += '\n\n[Placeholder Image - Featured image was not uploaded]';
+    }
+
+    return {
+        id: pageContentType.name + '_' + page.id,
+        slug: page.slug,
+        title: page.title.rendered,
+        status: page.status,
+        created: page.date,
+        modified: page.modified,
+        content: content,
+        author: [{
+            type: 'internal',
+            dataUrl: '/api/v1/content/' + authorContentType.name + '/' + authorContentType.name + '_' + page.author
+        }],
+        featuredMedia: page.featured_media && mediaArray[page.featured_media] ? [{
+            type: 'internal',
+            dataUrl: '/api/v1/content/_media/' + mediaArray[page.featured_media].id
+        }] : []
 
     }
 }
