@@ -1,4 +1,3 @@
-import * as notify from '../../../helpers/notify.js';
 import * as connect from '../helpers/connect.js';
 import {getFlotiqApi} from '@flotiq/api';
 import tagContentType from '../../../content-type-definitions/contentType2.json' with {type: 'json'};
