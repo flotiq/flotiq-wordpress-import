@@ -1,15 +1,17 @@
 import * as notify from '../../../helpers/notify.js';
 import * as connect from '../helpers/connect.js';
-import { flotiq } from '../../../helpers/flotiq.js';
-import tagContentType from '../../../content-type-definitions/contentType2.json' with { type: 'json' };
+import {getFlotiqApi} from '@flotiq/api';
+import tagContentType from '../../../content-type-definitions/contentType2.json' with {type: 'json'};
+import logger from "@flotiq/api/src/logger.js";
+import config from "../../../configuration/config.js";
 
 export const importer = async (apiKey, wordpressUrl) => {
-    console.log('Importing tags to Flotiq');
+    logger.info('# Importing tags to Flotiq');
+    const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey)
     let perPage = 25;
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
-    let imported = 0;
 
     for (page; page <= totalPages; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'tags');
@@ -24,22 +26,7 @@ export const importer = async (apiKey, wordpressUrl) => {
         if (!tagsConverted.length) {
             break;
         }
-        let result = await flotiq(apiKey, tagContentType.name, tagsConverted);
-        let json;
-        let text;
-        try {
-            text = await result.text()
-            console.log(text);
-            json = JSON.parse(text);
-
-        } catch (e) {
-            console.log(text);
-        }
-        if (json && json.batch_success_count && json.errors.length === 0) {
-            imported += json.batch_success_count;
-        }
-        notify.resultNotify(result, 'Tags from page', page, json);
-        console.log('Tags progress: ' + imported + '/' + totalCount);
+        await flotiqClient.persistContentObjectBatch(tagContentType.name, tagsConverted);
     }
 
     function convert(tag) {

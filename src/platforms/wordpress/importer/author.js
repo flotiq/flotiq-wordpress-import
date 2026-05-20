@@ -1,17 +1,18 @@
-import * as notify from '../../../helpers/notify.js';
-import { flotiq } from '../../../helpers/flotiq.js';
+import config from '../../../configuration/config.js';
+import {getFlotiqApi} from '@flotiq/api';
+import logger from '@flotiq/api/src/logger.js';
 import * as connect from '../helpers/connect.js';
-import authorContentType from '../../../content-type-definitions/contentType1.json' with { type: 'json' };
+import authorContentType from '../../../content-type-definitions/contentType1.json' with {type: 'json'};
 
 export const importer = async (apiKey, wordpressUrl) => {
-    console.log('Importing authors to Flotiq');
+    logger.info('# Importing authors to Flotiq');
+    const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey)
     let perPage = 25;
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
-    let imported = 0;
 
-    for(page; page <= totalPages; page++) {
+    for (page; page <= totalPages; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'users');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -19,7 +20,7 @@ export const importer = async (apiKey, wordpressUrl) => {
         let responseJson = wordpressResponse.responseJson;
         let authorsConverted = [];
 
-        if (typeof responseJson == 'undefined' || responseJson.length == 0) {
+        if (typeof responseJson == 'undefined' || responseJson.length === 0) {
             responseJson = [{
                 id: 1,
                 slug: 'unknown_author',
@@ -32,24 +33,8 @@ export const importer = async (apiKey, wordpressUrl) => {
         responseJson.map(async (author) => {
             authorsConverted.push(convert(author));
         })
-        let result = await flotiq(apiKey, authorContentType.name, authorsConverted);
-        let json;
-        let text;
-        try{
-            text = await result.text()
-            // console.log(text);
-            json = JSON.parse(text);
 
-        }catch (e) {
-            console.log(authorContentType.name);
-        }
-        if(json && json.batch_success_count && json.errors.length === 0){
-            imported+=json.batch_success_count;
-        }
-        notify.resultNotify(result, 'Authors from page', page, json);
-
-        console.log('Authors progress: ' + imported + '/' + totalCount);
-
+        await flotiqClient.persistContentObjectBatch(authorContentType.name, authorsConverted);
     }
 
     function convert(author) {

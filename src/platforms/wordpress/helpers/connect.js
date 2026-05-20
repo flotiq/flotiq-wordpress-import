@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import logger from '@flotiq/api/src/logger.js';
 
 const FETCH_TIMEOUT = 30000; // 30 seconds
 const MAX_RETRIES = 3;
@@ -34,7 +35,7 @@ const fetchWithRetry = async (url, options, retryCount = 0) => {
 };
 
 export const wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
-    console.log('Fetching ' + wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id');
+    logger.info('Fetching ' + wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id');
     try {
         let response = await fetchWithRetry(wordpressUrl + '?rest_route=/wp/v2/' + type + '&per_page=' + perPage + '&page=' + page + '&orderby=id', {
             method: 'GET'

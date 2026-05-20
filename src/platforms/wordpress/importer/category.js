@@ -1,18 +1,20 @@
-import * as notify from './../../../helpers/notify.js';
 import * as connect from '../helpers/connect.js';
-import { flotiq } from '../../../helpers/flotiq.js';
-import categoryContentType from '../../../content-type-definitions/contentType3.json' with { type: 'json' };
+import categoryContentType from '../../../content-type-definitions/contentType3.json' with {type: 'json'};
+import logger from "@flotiq/api/src/logger.js";
+import {getFlotiqApi} from "@flotiq/api";
+import config from "../../../configuration/config.js";
 
 export const importer = async (apiKey, wordpressUrl) => {
-    console.log('Importing categories to Flotiq');
+    logger.info('# Importing categories to Flotiq');
+    const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey)
     let perPage = 25;
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
-    let imported = 0;
+    0;
     let categoriesWithParent = [];
 
-    for(page; page <= totalPages; page++) {
+    for (page; page <= totalPages; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'categories');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -21,46 +23,18 @@ export const importer = async (apiKey, wordpressUrl) => {
         let categoriesConverted = [];
         responseJson.map(async (category) => {
             categoriesConverted.push(convert(category));
-            if(category.parent) {
+            if (category.parent) {
                 categoriesWithParent.push(convert2(category));
             }
         })
-        let result = await flotiq(apiKey, categoryContentType.name, categoriesConverted);
-        let json;
-        let text;
-        try{
-            text = await result.text()
-            console.log(text);
-            json = JSON.parse(text);
-
-        }catch (e) {
-            console.log(text);
-        }
-        if(json && json.batch_success_count && json.errors.length === 0){
-            imported+=json.batch_success_count;
-        }
-        notify.resultNotify(result, 'Categories from page', page, json);
-
-        console.log('Categories progress: ' + imported + '/' + totalCount);
-
+        await flotiqClient.persistContentObjectBatch(categoryContentType.name, categoriesConverted);
     }
-    if(categoriesWithParent.length) {
+
+    if (categoriesWithParent.length) {
         page = 0;
-        imported = 0;
-        totalPages = Math.ceil(categoriesWithParent.length/25);
-        for(page; page < totalPages; page++) {
-            let result = await flotiq(apiKey, categoryContentType.name, categoriesWithParent.slice(page*25,(page+1)*25));
-            let json;
-            let text;
-            try {
-                text = await result.text();
-                json = JSON.parse(text);
-            } catch (e) {
-                console.log(text);
-            }
-            notify.resultNotify(result, 'Categories with parents from page', page, json);
-            imported++;
-            console.log('Updating categories parents progress: ' + imported + '/' + categoriesWithParent.length);
+        totalPages = Math.ceil(categoriesWithParent.length / 25);
+        for (page; page < totalPages; page++) {
+            await flotiqClient.persistContentObjectBatch(categoryContentType.name, categoriesWithParent.slice(page * 25, (page + 1) * 25));
         }
     }
 

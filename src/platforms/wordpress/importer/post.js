@@ -1,19 +1,31 @@
-import * as notify from '../../../helpers/notify.js';
 import * as connect from '../helpers/connect.js';
 import * as convertHelper from '../helpers/convert.js';
 import postContentType from '../../../content-type-definitions/contentType4.json' with { type: 'json' };
 import tagContentType from '../../../content-type-definitions/contentType2.json' with { type: 'json' };
 import categoryContentType from '../../../content-type-definitions/contentType3.json' with { type: 'json' };
 import authorContentType from '../../../content-type-definitions/contentType1.json' with { type: 'json' };
-import { flotiq } from '../../../helpers/flotiq.js';
+import { getFlotiqApi } from '@flotiq/api';
+import logger from '@flotiq/api/src/logger.js';
+import config from '../../../configuration/config.js';
+
+const uploadBatch = async (client, contentTypeName, data, retry = 0) => {
+    try {
+        return await client.persistContentObjectBatch(contentTypeName, data);
+    } catch (error) {
+        if (retry < 5) {
+            return await uploadBatch(client, contentTypeName, data, ++retry);
+        }
+        throw error;
+    }
+};
 
 export const importer = async (apiKey, wordpressUrl, mediaArray) => {
-    console.log('Importing posts to Flotiq');
+    logger.info('# Importing posts to Flotiq');
+    const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey);
     let perPage = 25;
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
-    let imported = 0;
 
     for(page; page <= totalPages; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'posts');
@@ -28,26 +40,11 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
         responseJson.map(async (post) => {
             postsConverted.push(convert(post, mediaArray));
         })
-        let result = await flotiq(apiKey, postContentType.name, postsConverted);
-        let json;
-        let text;
-        try{
-            text = await result.text();
-            console.log(text);
-            json = JSON.parse(text);
-
-        }catch (e) {
-            console.log(text);
-        }
-        if(json && json.batch_success_count && json.errors.length === 0){
-            imported+=json.batch_success_count;
-        }
-        notify.resultNotify(result, 'Posts from page', page, json);
-        console.log('Posts progress: ' + imported + '/' + totalCount);
-
+        await uploadBatch(flotiqClient, postContentType.name, postsConverted);
     }
+};
 
-    function convert(post, mediaArray) {
+function convert(post, mediaArray) {
         let tags = post.tags.length ? post.tags.map((tag) => {
             return {
                 type: 'internal',
@@ -88,7 +85,5 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
             }] : [],
             tags: tags,
             categories: categories
-
         }
     }
-};

@@ -1,12 +1,25 @@
-import * as notify from '../../../helpers/notify.js';
 import * as connect from '../helpers/connect.js';
 import * as convertHelper from '../helpers/convert.js';
 import pageContentType from '../../../content-type-definitions/contentType5.json' with { type: 'json' };
 import authorContentType from '../../../content-type-definitions/contentType1.json' with { type: 'json' };
-import { flotiq } from '../../../helpers/flotiq.js';
+import { getFlotiqApi } from '@flotiq/api';
+import logger from '@flotiq/api/src/logger.js';
+import config from '../../../configuration/config.js';
+
+const uploadBatch = async (client, contentTypeName, data, retry = 0) => {
+    try {
+        return await client.persistContentObjectBatch(contentTypeName, data);
+    } catch (error) {
+        if (retry < 5) {
+            return await uploadBatch(client, contentTypeName, data, ++retry);
+        }
+        throw error;
+    }
+};
 
 export const importer = async (apiKey, wordpressUrl, mediaArray) => {
-    console.log('Importing pages to Flotiq');
+    logger.info('Importing pages to Flotiq');
+    const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey);
     let perPage = 25;
     let page = 1;
     let totalPages = 1;
@@ -27,48 +40,22 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
                 pagesWithParent.push(convert2(page, mediaArray));
             }
         })
-        let result = await flotiq(apiKey, pageContentType.name, pagesConverted);
-        let json;
-        let text;
-        try{
-            text = await result.text()
-            console.log(text);
-            json = JSON.parse(text);
-
-        } catch (e) {
-            console.log(text);
-        }
-        if(json && json.batch_success_count && json.errors.length === 0){
-            imported+=json.batch_success_count;
-        }
-
-
-        notify.resultNotify(result, 'Pages from page', page, json);
-
-        console.log('Pages progress: ' + imported + '/' + totalCount);
-
+        await uploadBatch(flotiqClient, pageContentType.name, pagesConverted);
     }
+
     if(pagesWithParent.length) {
         page = 0;
         imported = 0;
         totalPages = Math.ceil(pagesWithParent.length/25);
         for(page; page < totalPages; page++) {
-            let result = await flotiq(apiKey, pageContentType.name, pagesWithParent.slice(page*25,(page+1)*25));
-            let json;
-            let text;
-            try {
-                text = await result.text();
-                json = JSON.parse(text);
-            } catch (e) {
-                console.log(text);
-            }
-            notify.resultNotify(result, 'Pages with parents from page', page, json);
+            await uploadBatch(flotiqClient, pageContentType.name, pagesWithParent.slice(page*25,(page+1)*25));
             imported++;
-            console.log('Updating pages parents progress: ' + imported + '/' + pagesWithParent.length);
+            logger.info('Updating pages parents progress: ' + imported + '/' + pagesWithParent.length);
         }
     }
+};
 
-    function convert(page, mediaArray) {
+function convert(page, mediaArray) {
         let content = convertHelper.convertContent(page.content.rendered, mediaArray);
         
         // Add placeholder if featured media is not available
@@ -93,15 +80,15 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
                 dataUrl: '/api/v1/content/_media/' + mediaArray[page.featured_media].id
             }] : []
 
-        }
     }
-    function convert2(page, mediaArray) {
-        return {
-            ...convert(page, mediaArray),
-            parentPage: page.parent ? [{
-                type: 'internal',
-                dataUrl: '/api/v1/content/' + pageContentType.name + '/' + pageContentType.name + '_' + page.parent
-            }] : []
-        }
+}
+
+function convert2(page, mediaArray) {
+    return {
+        ...convert(page, mediaArray),
+        parentPage: page.parent ? [{
+            type: 'internal',
+            dataUrl: '/api/v1/content/' + pageContentType.name + '/' + pageContentType.name + '_' + page.parent
+        }] : []
     }
-};
+}

@@ -14,10 +14,8 @@ const { createOrUpdateMock, getFlotiqApiMock, notifyMock } = vi.hoisted(() => ({
     notifyMock: vi.fn(),
 }));
 
-vi.mock('flotiq-api', () => ({
-    default: {
-        getFlotiqApi: getFlotiqApiMock,
-    },
+vi.mock('@flotiq/api', () => ({
+    getFlotiqApi: getFlotiqApiMock,
 }));
 
 vi.mock('../src/helpers/notify.js', () => ({
