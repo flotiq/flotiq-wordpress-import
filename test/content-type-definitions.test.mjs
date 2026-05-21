@@ -8,18 +8,13 @@ import contentType5 from '../src/content-type-definitions/contentType5.json' wit
 
 const definitions = [contentType1, contentType2, contentType3, contentType4, contentType5];
 
-const { createOrUpdateMock, getFlotiqApiMock, notifyMock } = vi.hoisted(() => ({
+const { createOrUpdateMock, getFlotiqApiMock } = vi.hoisted(() => ({
     createOrUpdateMock: vi.fn(),
     getFlotiqApiMock: vi.fn(),
-    notifyMock: vi.fn(),
 }));
 
 vi.mock('@flotiq/api', () => ({
     getFlotiqApi: getFlotiqApiMock,
-}));
-
-vi.mock('../src/helpers/notify.js', () => ({
-    resultNotify: notifyMock,
 }));
 
 describe('content type definitions importer', () => {
@@ -28,7 +23,6 @@ describe('content type definitions importer', () => {
         config.apiUrl = 'https://api.flotiq.com';
         createOrUpdateMock.mockReset();
         getFlotiqApiMock.mockReset();
-        notifyMock.mockReset();
         createOrUpdateMock.mockResolvedValue({ status: 200, statusText: 'OK', json: async () => ({}) });
         getFlotiqApiMock.mockReturnValue({
             createOrUpdate: createOrUpdateMock,
@@ -50,13 +44,6 @@ describe('content type definitions importer', () => {
             1,
             null,
             definitions[0],
-        );
-        expect(notifyMock).toHaveBeenCalledTimes(definitions.length);
-        expect(notifyMock).toHaveBeenNthCalledWith(
-            1,
-            expect.objectContaining({ status: 200, statusText: 'OK' }),
-            'Definition',
-            definitions[0].name,
         );
     });
 });

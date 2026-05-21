@@ -47,10 +47,6 @@ or in development:
 
 `wordpressUrl` - full link to your Wordpress site
 
-### Flags
-
-`--json-output`, `-j` - Error and console output will be additionally written into json file named `output.json`.
-
 ## Collaboration
 
 If you wish to talk with us about this project, feel free to hop on [![Discord Chat](https://img.shields.io/discord/682699728454025410.svg)](https://discord.gg/FwXcHnX)  .

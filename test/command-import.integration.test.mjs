@@ -46,7 +46,6 @@ describe('command integration', () => {
         expect(startImportWordpressMock).toHaveBeenCalledWith(
             'test-api-key',
             'https://example.test/blog/',
-            false,
         );
         expect(startImportWordpressComMock).not.toHaveBeenCalled();
     });

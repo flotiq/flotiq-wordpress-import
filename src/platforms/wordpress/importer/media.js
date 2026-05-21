@@ -2,16 +2,13 @@ import * as connect from './../helpers/connect.js';
 import {getFlotiqApi} from "@flotiq/api";
 import logger from "@flotiq/api/src/logger.js";
 import config from "../../../configuration/config.js";
+import {isQuotaError} from "../../../helpers/notify.js";
 
 const uploadMediaWithRetry = async (client, mediaConverted, images, retry = 0) => {
-    try {
-        if (images[mediaConverted.fileName]) {
-            return images[mediaConverted.fileName];
-        }
-        return await client.uploadMediaFromUrl(mediaConverted, images);
-    } catch (error) {
-        logger.warn(JSON.stringify(error.response?.data), '=================================================================');
+    if (images[mediaConverted.fileName]) {
+        return images[mediaConverted.fileName];
     }
+    return await client.uploadMediaFromUrl(mediaConverted, images);
 };
 
 export const importer = async (apiKey, wordpressUrl) => {
@@ -47,20 +44,12 @@ export const importer = async (apiKey, wordpressUrl) => {
                     mediaArray[media.id].sizes = media.media_details && media.media_details.sizes ? media.media_details.sizes : {size: {source_url: media.guid.rendered}};
                 }
             } catch (error) {
-                // Check for quota exceeded error (403 status or quota_exceeded in error message/data)
-                const isQuotaExceeded =
-                    error.response?.status === 403 ||
-                    error.response?.data?.error?.includes('quota') ||
-                    error.response?.data?.message?.includes('quota') ||
-                    error.message?.includes('quota') ||
-                    JSON.stringify(error).includes('quota');
-
-                if (isQuotaExceeded) {
+                if (isQuotaError(error)) {
                     logger.error('Quota exceeded. Stopping media uploads.');
                     quotaExceeded = true;
                     break;
                 } else {
-                    logger.error('Error uploading media:', error);
+                    logger.error('Error uploading media:' + JSON.stringify(error.response?.data));
                 }
             }
         }

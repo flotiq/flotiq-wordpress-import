@@ -13,6 +13,8 @@ const {
     fetchContentObjectsMock,
     uploadMediaFromUrlMock,
     loggerInfoMock,
+    loggerWarnMock,
+    loggerErrorMock,
 } = vi.hoisted(() => ({
     wordpressMock: vi.fn(),
     getFlotiqApiMock: vi.fn(),
@@ -21,6 +23,8 @@ const {
     fetchContentObjectsMock: vi.fn(),
     uploadMediaFromUrlMock: vi.fn(),
     loggerInfoMock: vi.fn(),
+    loggerWarnMock: vi.fn(),
+    loggerErrorMock: vi.fn(),
 }));
 
 vi.mock('../src/platforms/wordpress/helpers/connect.js', () => ({
@@ -34,8 +38,8 @@ vi.mock('@flotiq/api', () => ({
 vi.mock('@flotiq/api/src/logger.js', () => ({
     default: {
         info: loggerInfoMock,
-        warn: vi.fn(),
-        error: vi.fn(),
+        warn: loggerWarnMock,
+        error: loggerErrorMock,
     },
 }));
 
@@ -54,6 +58,8 @@ describe('wordpress import integration', () => {
         getFlotiqApiMock.mockReset();
         wordpressMock.mockReset();
         loggerInfoMock.mockReset();
+        loggerWarnMock.mockReset();
+        loggerErrorMock.mockReset();
 
         createOrUpdateMock.mockResolvedValue({
             status: 200,
@@ -222,5 +228,156 @@ describe('wordpress import integration', () => {
                 .get(categoryContentType.name)
                 .some((item) => item.id === `${categoryContentType.name}_32` && Array.isArray(item.parentCategory) && item.parentCategory.length > 0),
         ).toBe(true);
+    });
+
+    it('stops media uploads on quota exceeded and still finishes import', async () => {
+        uploadMediaFromUrlMock.mockRejectedValueOnce({
+            response: {
+                status: 403,
+                data: {
+                    error: 'quota exceeded',
+                },
+            },
+            message: 'Request failed with status code 403',
+        });
+
+        const startImportModule = await import('../src/platforms/wordpress/import.js');
+
+        startImportModule.default('test-api-key', 'https://example.test/blog/');
+
+        await vi.waitFor(() => {
+            expect(loggerInfoMock).toHaveBeenCalledWith('Finished');
+        });
+
+        expect(uploadMediaFromUrlMock).toHaveBeenCalledTimes(1);
+        expect(loggerErrorMock).toHaveBeenCalledWith('Quota exceeded. Stopping media uploads.');
+
+        const persistedData = new Map();
+        for (const [contentTypeName, batch] of persistContentObjectBatchMock.mock.calls) {
+            const current = persistedData.get(contentTypeName) || [];
+            persistedData.set(contentTypeName, [...current, ...batch]);
+        }
+
+        const importedPost = persistedData.get(postContentType.name).find((item) => item.id === `${postContentType.name}_101`);
+        expect(importedPost.content).toContain('[Placeholder Image - Featured image was not uploaded]');
+    });
+
+    it('logs non-quota media upload errors and continues with next media', async () => {
+        wordpressMock.mockImplementation(async (_url, _perPage, _page, _totalPages, type) => {
+            const responseByType = {
+                users: [
+                    {
+                        id: 10,
+                        slug: 'john-doe',
+                        name: 'John Doe',
+                        description: 'Demo author',
+                    },
+                ],
+                tags: [
+                    {
+                        id: 21,
+                        slug: 'news',
+                        name: 'News',
+                        description: 'News tag',
+                    },
+                ],
+                categories: [
+                    {
+                        id: 31,
+                        slug: 'general',
+                        name: 'General',
+                        description: 'General category',
+                        parent: 0,
+                    },
+                ],
+                media: [
+                    {
+                        id: 301,
+                        mime_type: 'image/jpeg',
+                        guid: {
+                            rendered: 'https://example.test/wp-content/uploads/hero.jpg',
+                        },
+                        media_details: {
+                            sizes: {
+                                full: {
+                                    file: 'hero.jpg',
+                                    source_url: 'https://example.test/wp-content/uploads/hero.jpg',
+                                },
+                            },
+                        },
+                    },
+                    {
+                        id: 302,
+                        mime_type: 'image/jpeg',
+                        guid: {
+                            rendered: 'https://example.test/wp-content/uploads/banner.jpg',
+                        },
+                        media_details: {
+                            sizes: {
+                                full: {
+                                    file: 'banner.jpg',
+                                    source_url: 'https://example.test/wp-content/uploads/banner.jpg',
+                                },
+                            },
+                        },
+                    },
+                ],
+                posts: [
+                    {
+                        id: 101,
+                        slug: 'hello-world',
+                        title: { rendered: 'Hello World' },
+                        status: 'publish',
+                        type: 'post',
+                        date: '2026-01-01T00:00:00',
+                        modified: '2026-01-02T00:00:00',
+                        content: {
+                            rendered: '<p>WordPress post</p>',
+                        },
+                        excerpt: { rendered: 'Excerpt' },
+                        author: 10,
+                        featured_media: 302,
+                        tags: [21],
+                        categories: [31],
+                    },
+                ],
+                pages: [],
+            };
+
+            const responseJson = responseByType[type] || [];
+            return {
+                totalCount: String(responseJson.length),
+                totalPages: 1,
+                responseJson,
+            };
+        });
+
+        uploadMediaFromUrlMock
+            .mockRejectedValueOnce(new Error('Network error during upload'))
+            .mockResolvedValueOnce({
+                id: 'media-302',
+                fileName: 'banner.jpg',
+                extension: 'jpg',
+            });
+
+        const startImportModule = await import('../src/platforms/wordpress/import.js');
+
+        startImportModule.default('test-api-key', 'https://example.test/blog/');
+
+        await vi.waitFor(() => {
+            expect(loggerInfoMock).toHaveBeenCalledWith('Finished');
+        });
+
+        expect(uploadMediaFromUrlMock).toHaveBeenCalledTimes(2);
+        expect(loggerErrorMock).toHaveBeenCalledWith(expect.stringContaining('Error uploading media:'));
+
+        const persistedData = new Map();
+        for (const [contentTypeName, batch] of persistContentObjectBatchMock.mock.calls) {
+            const current = persistedData.get(contentTypeName) || [];
+            persistedData.set(contentTypeName, [...current, ...batch]);
+        }
+
+        const importedPost = persistedData.get(postContentType.name).find((item) => item.id === `${postContentType.name}_101`);
+        expect(importedPost.featuredMedia).toHaveLength(1);
     });
 });

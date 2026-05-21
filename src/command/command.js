@@ -5,7 +5,7 @@ import yargs from 'yargs';
 import startImportWordpressCom from '../platforms/wordpress.com/import.js';
 import startImportWordpress from '../platforms/wordpress/import.js';
 
-const run = (apiKey, wordpressUrl, isJson = false) => {
+const run = (apiKey, wordpressUrl) => {
     if (wordpressUrl.charAt(wordpressUrl.length - 1) !== '/') {
         wordpressUrl += '/';
     }
@@ -14,12 +14,9 @@ const run = (apiKey, wordpressUrl, isJson = false) => {
         ? startImportWordpressCom
         : startImportWordpress;
 
-    startImport(apiKey, wordpressUrl, isJson)
+    startImport(apiKey, wordpressUrl)
 }
 yargs
-    .boolean('json-output')
-    .alias('json-output', ['j'])
-    .describe('json-output', ' Whether to return results as JSON')
     .command('import [apiKey] [wordpressUrl]', 'Import wordpress to Flotiq', (yargs) => {
         yargs
             .positional('apiKey', {
@@ -34,9 +31,9 @@ yargs
         if (yargs.argv._.length < 3) {
             const answers = await askStartQuestions();
             const {apiKey, wordpressUrl} = answers;
-            run(apiKey, wordpressUrl, yargs.argv['json-output'])
+            run(apiKey, wordpressUrl)
         } else if (yargs.argv._.length === 3) {
-            run(argv.apiKey, argv.wordpressUrl, yargs.argv['json-output'])
+            run(argv.apiKey, argv.wordpressUrl)
         } else {
             yargs.showHelp();
             process.exit(1);
