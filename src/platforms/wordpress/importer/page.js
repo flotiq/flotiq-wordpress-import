@@ -5,17 +5,7 @@ import authorContentType from '../../../content-type-definitions/contentType1.js
 import {getFlotiqApi} from '@flotiq/api';
 import logger from '@flotiq/api/src/logger.js';
 import config from '../../../configuration/config.js';
-
-const uploadBatch = async (client, contentTypeName, data, retry = 0) => {
-    try {
-        return await client.persistContentObjectBatch(contentTypeName, data);
-    } catch (error) {
-        if (retry < 5) {
-            return await uploadBatch(client, contentTypeName, data, ++retry);
-        }
-        throw error;
-    }
-};
+import {isQuotaError} from '../../../helpers/notify.js';
 
 export const importer = async (apiKey, wordpressUrl, mediaArray) => {
     logger.info('Importing pages to Flotiq');
@@ -26,8 +16,9 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
     let totalCount = 1;
     let imported = 0;
     let pagesWithParent = [];
+    let quotaExceeded = false;
 
-    for (page; page <= totalPages; page++) {
+    for (page; page <= totalPages && !quotaExceeded; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'pages');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -40,17 +31,35 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
                 pagesWithParent.push(convert2(page, mediaArray));
             }
         })
-        await uploadBatch(flotiqClient, pageContentType.name, pagesConverted);
+        try {
+            await flotiqClient.persistContentObjectBatch(pageContentType.name, pagesConverted);
+        } catch (error) {
+            if (isQuotaError(error)) {
+                logger.error('Quota exceeded. Stopping pages import.');
+                quotaExceeded = true;
+            } else {
+                throw error;
+            }
+        }
     }
 
-    if (pagesWithParent.length) {
+    if (!quotaExceeded && pagesWithParent.length) {
         page = 0;
         imported = 0;
         totalPages = Math.ceil(pagesWithParent.length / 25);
-        for (page; page < totalPages; page++) {
-            await uploadBatch(flotiqClient, pageContentType.name, pagesWithParent.slice(page * 25, (page + 1) * 25));
-            imported++;
-            logger.info('Updating pages parents progress: ' + imported + '/' + pagesWithParent.length);
+        for (page; page < totalPages && !quotaExceeded; page++) {
+            try {
+                await flotiqClient.persistContentObjectBatch(pageContentType.name, pagesWithParent.slice(page * 25, (page + 1) * 25));
+                imported++;
+                logger.info('Updating pages parents progress: ' + imported + '/' + pagesWithParent.length);
+            } catch (error) {
+                if (isQuotaError(error)) {
+                    logger.error('Quota exceeded. Stopping pages parents update.');
+                    quotaExceeded = true;
+                } else {
+                    throw error;
+                }
+            }
         }
     }
 };
@@ -62,7 +71,6 @@ function convert(page, mediaArray) {
     if (page.featured_media && !mediaArray[page.featured_media]) {
         content += '\n\n[Placeholder Image - Featured image was not uploaded]';
     }
-
     return {
         id: pageContentType.name + '_' + page.id,
         slug: page.slug,

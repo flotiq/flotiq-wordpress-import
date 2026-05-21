@@ -7,17 +7,7 @@ import authorContentType from '../../../content-type-definitions/contentType1.js
 import {getFlotiqApi} from '@flotiq/api';
 import logger from '@flotiq/api/src/logger.js';
 import config from '../../../configuration/config.js';
-
-const uploadBatch = async (client, contentTypeName, data, retry = 0) => {
-    try {
-        return await client.persistContentObjectBatch(contentTypeName, data);
-    } catch (error) {
-        if (retry < 5) {
-            return await uploadBatch(client, contentTypeName, data, ++retry);
-        }
-        throw error;
-    }
-};
+import {isQuotaError} from '../../../helpers/notify.js';
 
 export const importer = async (apiKey, wordpressUrl, mediaArray) => {
     logger.info('# Importing posts to Flotiq');
@@ -26,8 +16,9 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
+    let quotaExceeded = false;
 
-    for (page; page <= totalPages; page++) {
+    for (page; page <= totalPages && !quotaExceeded; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'posts');
         if (!(wordpressResponse && wordpressResponse.totalPages && wordpressResponse.totalCount)) {
             return;
@@ -40,7 +31,16 @@ export const importer = async (apiKey, wordpressUrl, mediaArray) => {
         responseJson.map(async (post) => {
             postsConverted.push(convert(post, mediaArray));
         })
-        await uploadBatch(flotiqClient, postContentType.name, postsConverted);
+        try {
+            await flotiqClient.persistContentObjectBatch(postContentType.name, postsConverted);
+        } catch (error) {
+            if (isQuotaError(error)) {
+                logger.error('Quota exceeded. Stopping posts import.');
+                quotaExceeded = true;
+            } else {
+                throw error;
+            }
+        }
     }
 };
 

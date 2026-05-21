@@ -1,4 +1,3 @@
-import * as notify from '../../../helpers/notify.js';
 import * as connect from './../helpers/connect.js';
 import {getFlotiqApi} from "@flotiq/api";
 import logger from "@flotiq/api/src/logger.js";
@@ -6,18 +5,12 @@ import config from "../../../configuration/config.js";
 
 const uploadMediaWithRetry = async (client, mediaConverted, images, retry = 0) => {
     try {
-        // Check if media is already uploaded
         if (images[mediaConverted.fileName]) {
             return images[mediaConverted.fileName];
         }
-
-        // Upload media using @flotiq/api client
         return await client.uploadMediaFromUrl(mediaConverted, images);
     } catch (error) {
-        if (retry < 5) {
-            return await uploadMediaWithRetry(client, mediaConverted, images, ++retry);
-        }
-        throw error;
+        logger.warn(JSON.stringify(error.response?.data), '=================================================================');
     }
 };
 
@@ -47,7 +40,7 @@ export const importer = async (apiKey, wordpressUrl) => {
             let mediaConverted = convert(media);
             try {
                 let result = await uploadMediaWithRetry(flotiqClient, mediaConverted, images);
-                notify.resultNotify(result, 'Media', mediaConverted.fileName);
+                logger.info(`Media ${mediaConverted.fileName} added/existing`);
                 imported++;
                 if (result) {
                     mediaArray[media.id] = result.data ? result.data[0] : result;
@@ -63,17 +56,17 @@ export const importer = async (apiKey, wordpressUrl) => {
                     JSON.stringify(error).includes('quota');
 
                 if (isQuotaExceeded) {
-                    console.error('Quota exceeded. Stopping media uploads.');
+                    logger.error('Quota exceeded. Stopping media uploads.');
                     quotaExceeded = true;
                     break;
                 } else {
-                    console.error('Error uploading media:', error);
+                    logger.error('Error uploading media:', error);
                 }
             }
         }
 
         if (quotaExceeded) break;
-        console.log('Media progress: ' + imported + '/' + totalCount);
+        logger.info('Media progress: ' + imported + '/' + totalCount);
     }
 
     return mediaArray;

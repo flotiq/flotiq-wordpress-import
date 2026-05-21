@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import logger from '@flotiq/api/src/logger.js';
 
 const FETCH_TIMEOUT = 30000; // 30 seconds
@@ -16,7 +15,6 @@ const fetchWithRetry = async (url, options, retryCount = 0) => {
         const response = await fetch(url, {
             ...options,
             signal: controller.signal,
-            timeout: FETCH_TIMEOUT,
         });
         
         clearTimeout(timeoutId);

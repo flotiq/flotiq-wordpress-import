@@ -7,17 +7,6 @@ import {getFlotiqApi} from '@flotiq/api';
 import logger from '@flotiq/api/src/logger.js';
 import config from "../../../configuration/config.js";
 
-const uploadBatch = async (client, contentTypeName, data, retry = 0) => {
-    try {
-        return await client.persistContentObjectBatch(contentTypeName, data);
-    } catch (error) {
-        if (retry < 5) {
-            return await uploadBatch(client, contentTypeName, data, ++retry);
-        }
-        throw error;
-    }
-};
-
 export const importer = async (apiKey, wordpressUrl) => {
     logger.info('# Importing posts to Flotiq');
     const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey);
@@ -44,7 +33,7 @@ export const importer = async (apiKey, wordpressUrl) => {
 
         await addAuthors(posts);
 
-        await uploadBatch(flotiqClient, postContentType.name, postsConverted);
+        await flotiqClient.persistContentObjectBatch(postContentType.name, postsConverted);
     }
 
     async function addAuthors(posts) {
@@ -62,7 +51,7 @@ export const importer = async (apiKey, wordpressUrl) => {
             return unique;
         }, []);
 
-        await uploadBatch(flotiqClient, authorContentType.name, uniqueAuthors);
+        await flotiqClient.persistContentObjectBatch(authorContentType.name, uniqueAuthors);
     }
 
     function convertAuthors(author) {

@@ -1,4 +1,3 @@
-import * as notify from './../../../helpers/notify.js';
 import * as connect from '../helpers/connect.js';
 import categoryContentType from '../../../content-type-definitions/contentType3.json' with {type: 'json'};
 import logger from "@flotiq/api/src/logger.js";

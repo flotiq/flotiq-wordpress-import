@@ -12,6 +12,7 @@ const {
     persistContentObjectBatchMock,
     fetchContentObjectsMock,
     uploadMediaFromUrlMock,
+    loggerInfoMock,
 } = vi.hoisted(() => ({
     wordpressMock: vi.fn(),
     getFlotiqApiMock: vi.fn(),
@@ -19,6 +20,7 @@ const {
     persistContentObjectBatchMock: vi.fn(),
     fetchContentObjectsMock: vi.fn(),
     uploadMediaFromUrlMock: vi.fn(),
+    loggerInfoMock: vi.fn(),
 }));
 
 vi.mock('../src/platforms/wordpress/helpers/connect.js', () => ({
@@ -31,7 +33,7 @@ vi.mock('@flotiq/api', () => ({
 
 vi.mock('@flotiq/api/src/logger.js', () => ({
     default: {
-        info: vi.fn(),
+        info: loggerInfoMock,
         warn: vi.fn(),
         error: vi.fn(),
     },
@@ -51,6 +53,7 @@ describe('wordpress import integration', () => {
         uploadMediaFromUrlMock.mockReset();
         getFlotiqApiMock.mockReset();
         wordpressMock.mockReset();
+        loggerInfoMock.mockReset();
 
         createOrUpdateMock.mockResolvedValue({
             status: 200,
@@ -192,13 +195,12 @@ describe('wordpress import integration', () => {
     });
 
     it('imports wordpress sample data when started with apiKey and host', async () => {
-        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
         const startImportModule = await import('../src/platforms/wordpress/import.js');
 
         startImportModule.default('test-api-key', 'https://example.test/blog/');
 
         await vi.waitFor(() => {
-            expect(logSpy).toHaveBeenCalledWith('Finished', '');
+            expect(loggerInfoMock).toHaveBeenCalledWith('Finished');
         });
 
         const importedTypes = new Set(wordpressMock.mock.calls.map((call) => call[4]));

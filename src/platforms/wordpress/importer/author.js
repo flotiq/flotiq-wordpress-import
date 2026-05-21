@@ -3,6 +3,7 @@ import {getFlotiqApi} from '@flotiq/api';
 import logger from '@flotiq/api/src/logger.js';
 import * as connect from '../helpers/connect.js';
 import authorContentType from '../../../content-type-definitions/contentType1.json' with {type: 'json'};
+import {isQuotaError} from '../../../helpers/notify.js';
 
 export const importer = async (apiKey, wordpressUrl) => {
     logger.info('# Importing authors to Flotiq');
@@ -11,8 +12,9 @@ export const importer = async (apiKey, wordpressUrl) => {
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
+    let quotaExceeded = false;
 
-    for (page; page <= totalPages; page++) {
+    for (page; page <= totalPages && !quotaExceeded; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'users');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -27,14 +29,23 @@ export const importer = async (apiKey, wordpressUrl) => {
                 name: 'Unknown Author',
                 description: 'unknown author'
             }];
-            console.log("Can't fetch authors! Created default 'unknown' author.")
+            logger.warn("Can't fetch authors! Created default 'unknown' author.")
         }
 
         responseJson.map(async (author) => {
             authorsConverted.push(convert(author));
         })
 
-        await flotiqClient.persistContentObjectBatch(authorContentType.name, authorsConverted);
+        try {
+            await flotiqClient.persistContentObjectBatch(authorContentType.name, authorsConverted);
+        } catch (error) {
+            if (isQuotaError(error)) {
+                logger.error('Quota exceeded. Stopping authors import.');
+                quotaExceeded = true;
+            } else {
+                throw error;
+            }
+        }
     }
 
     function convert(author) {

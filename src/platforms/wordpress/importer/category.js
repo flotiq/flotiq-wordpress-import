@@ -3,6 +3,7 @@ import categoryContentType from '../../../content-type-definitions/contentType3.
 import logger from "@flotiq/api/src/logger.js";
 import {getFlotiqApi} from "@flotiq/api";
 import config from "../../../configuration/config.js";
+import {isQuotaError} from '../../../helpers/notify.js';
 
 export const importer = async (apiKey, wordpressUrl) => {
     logger.info('# Importing categories to Flotiq');
@@ -12,8 +13,9 @@ export const importer = async (apiKey, wordpressUrl) => {
     let totalPages = 1;
     let totalCount = 1;
     let categoriesWithParent = [];
+    let quotaExceeded = false;
 
-    for (page; page <= totalPages; page++) {
+    for (page; page <= totalPages && !quotaExceeded; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'categories');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -26,14 +28,32 @@ export const importer = async (apiKey, wordpressUrl) => {
                 categoriesWithParent.push(convert2(category));
             }
         })
-        await flotiqClient.persistContentObjectBatch(categoryContentType.name, categoriesConverted);
+        try {
+            await flotiqClient.persistContentObjectBatch(categoryContentType.name, categoriesConverted);
+        } catch (error) {
+            if (isQuotaError(error)) {
+                logger.error('Quota exceeded. Stopping categories import.');
+                quotaExceeded = true;
+            } else {
+                throw error;
+            }
+        }
     }
 
-    if (categoriesWithParent.length) {
+    if (!quotaExceeded && categoriesWithParent.length) {
         page = 0;
         totalPages = Math.ceil(categoriesWithParent.length / 25);
-        for (page; page < totalPages; page++) {
-            await flotiqClient.persistContentObjectBatch(categoryContentType.name, categoriesWithParent.slice(page * 25, (page + 1) * 25));
+        for (page; page < totalPages && !quotaExceeded; page++) {
+            try {
+                await flotiqClient.persistContentObjectBatch(categoryContentType.name, categoriesWithParent.slice(page * 25, (page + 1) * 25));
+            } catch (error) {
+                if (isQuotaError(error)) {
+                    logger.error('Quota exceeded. Stopping categories parents update.');
+                    quotaExceeded = true;
+                } else {
+                    throw error;
+                }
+            }
         }
     }
 

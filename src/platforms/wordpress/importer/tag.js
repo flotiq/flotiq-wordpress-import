@@ -3,6 +3,7 @@ import {getFlotiqApi} from '@flotiq/api';
 import tagContentType from '../../../content-type-definitions/contentType2.json' with {type: 'json'};
 import logger from "@flotiq/api/src/logger.js";
 import config from "../../../configuration/config.js";
+import {isQuotaError} from '../../../helpers/notify.js';
 
 export const importer = async (apiKey, wordpressUrl) => {
     logger.info('# Importing tags to Flotiq');
@@ -11,8 +12,9 @@ export const importer = async (apiKey, wordpressUrl) => {
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
+    let quotaExceeded = false;
 
-    for (page; page <= totalPages; page++) {
+    for (page; page <= totalPages && !quotaExceeded; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'tags');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -25,7 +27,16 @@ export const importer = async (apiKey, wordpressUrl) => {
         if (!tagsConverted.length) {
             break;
         }
-        await flotiqClient.persistContentObjectBatch(tagContentType.name, tagsConverted);
+        try {
+            await flotiqClient.persistContentObjectBatch(tagContentType.name, tagsConverted);
+        } catch (error) {
+            if (isQuotaError(error)) {
+                logger.error('Quota exceeded. Stopping tags import.');
+                quotaExceeded = true;
+            } else {
+                throw error;
+            }
+        }
     }
 
     function convert(tag) {

@@ -1,6 +1,3 @@
-import fetch from 'node-fetch';
-
-
 export const wordpress = async (wordpressUrl, perPage, page, totalPages, type) => {
     const site = wordpressUrl.replace('https://', '');
     let url = `https://public-api.wordpress.com/rest/v1.1/sites/${site}/${type}?number=${perPage}&page=${page}&order_by=ID`
