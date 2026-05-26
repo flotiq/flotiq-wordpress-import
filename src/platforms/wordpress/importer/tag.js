@@ -3,7 +3,7 @@ import {getFlotiqApi} from '@flotiq/api';
 import tagContentType from '../../../content-type-definitions/contentType2.json' with {type: 'json'};
 import logger from "@flotiq/api/src/logger.js";
 import config from "../../../configuration/config.js";
-import {isQuotaError} from '../../../helpers/notify.js';
+import {isQuotaError} from '../../../helpers/quota-helper.js';
 
 export const importer = async (apiKey, wordpressUrl) => {
     logger.info('# Importing tags to Flotiq');

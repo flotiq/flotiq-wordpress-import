@@ -2,9 +2,9 @@ import * as connect from './../helpers/connect.js';
 import {getFlotiqApi} from "@flotiq/api";
 import logger from "@flotiq/api/src/logger.js";
 import config from "../../../configuration/config.js";
-import {isQuotaError} from "../../../helpers/notify.js";
+import {isQuotaError} from "../../../helpers/quota-helper.js";
 
-const uploadMediaWithRetry = async (client, mediaConverted, images, retry = 0) => {
+const uploadMediaWithRetry = async (client, mediaConverted, images) => {
     if (images[mediaConverted.fileName]) {
         return images[mediaConverted.fileName];
     }

@@ -3,7 +3,7 @@ import {getFlotiqApi} from '@flotiq/api';
 import logger from '@flotiq/api/src/logger.js';
 import * as connect from '../helpers/connect.js';
 import authorContentType from '../../../content-type-definitions/contentType1.json' with {type: 'json'};
-import {isQuotaError} from '../../../helpers/notify.js';
+import {isQuotaError} from '../../../helpers/quota-helper.js';
 
 export const importer = async (apiKey, wordpressUrl) => {
     logger.info('# Importing authors to Flotiq');

@@ -5,7 +5,7 @@ import authorContentType from '../../../content-type-definitions/contentType1.js
 import {getFlotiqApi} from '@flotiq/api';
 import logger from '@flotiq/api/src/logger.js';
 import config from '../../../configuration/config.js';
-import {isQuotaError} from '../../../helpers/notify.js';
+import {isQuotaError} from '../../../helpers/quota-helper.js';
 
 export const importer = async (apiKey, wordpressUrl, mediaArray) => {
     logger.info('Importing pages to Flotiq');
