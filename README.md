@@ -53,26 +53,6 @@ If you wish to talk with us about this project, feel free to hop on [![Discord C
    
 If you found a bug, please report it in [issues](https://github.com/flotiq/flotiq-wordpress-import/issues).
 
-
-## Errors
-To make your life and ours easier, we have prepared an error codes.
-
-
-### 1XX - Execution error
-  
-#### #101
-  Flotiq API bad response.
-
-#### #301
- Problem with adding Content Object.
-
-#### #302
- Incorrect Flotiq API key.
-
-#### #400
- Incorrect wordpress url.
-
-
 ## NPM publish
 
 To publish a new package in NPM, you need to update the version in the packages.json file and then commit the changes with the message "Release x.y.z".
