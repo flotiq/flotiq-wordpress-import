@@ -1,18 +1,21 @@
-const notify = require('./../../../helpers/notify');
-const connect = require('../helpers/connect');
-const {flotiq} = require('../../../helpers/flotiq');
-const categoryContentType = require('../../../content-type-definitions/contentType3.json');
+import * as connect from '../helpers/connect.js';
+import categoryContentType from '../../../content-type-definitions/contentType3.json' with {type: 'json'};
+import logger from "@flotiq/api/src/logger.js";
+import {getFlotiqApi} from "@flotiq/api";
+import config from "../../../configuration/config.js";
+import {isQuotaError} from '../../../helpers/quota-helper.js';
 
-exports.importer = async (apiKey, wordpressUrl) => {
-    console.log('Importing categories to Flotiq');
+export const importer = async (apiKey, wordpressUrl) => {
+    logger.info('# Importing categories to Flotiq');
+    const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey)
     let perPage = 25;
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
-    let imported = 0;
     let categoriesWithParent = [];
+    let quotaExceeded = false;
 
-    for(page; page <= totalPages; page++) {
+    for (page; page <= totalPages && !quotaExceeded; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'categories');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -21,38 +24,36 @@ exports.importer = async (apiKey, wordpressUrl) => {
         let categoriesConverted = [];
         responseJson.map(async (category) => {
             categoriesConverted.push(convert(category));
-            if(category.parent) {
+            if (category.parent) {
                 categoriesWithParent.push(convert2(category));
             }
         })
-        let result = await flotiq(apiKey, categoryContentType.name, categoriesConverted);
-        let json;
-        let text;
-        try{
-            text = await result.text()
-            console.log(text);
-            json = JSON.parse(text);
-
-        }catch (e) {
-            console.log(text);
+        try {
+            await flotiqClient.persistContentObjectBatch(categoryContentType.name, categoriesConverted);
+        } catch (error) {
+            if (isQuotaError(error)) {
+                logger.error('Quota exceeded. Stopping categories import.');
+                quotaExceeded = true;
+            } else {
+                throw error;
+            }
         }
-        if(json && json.batch_success_count && json.errors.length === 0){
-            imported+=json.batch_success_count;
-        }
-        notify.resultNotify(result, 'Categories from page', page);
-
-        console.log('Categories progress: ' + imported + '/' + totalCount);
-
     }
-    if(categoriesWithParent.length) {
+
+    if (!quotaExceeded && categoriesWithParent.length) {
         page = 0;
-        imported = 0;
-        totalPages = Math.ceil(categoriesWithParent.length/25);
-        for(page; page < totalPages; page++) {
-            let result = await flotiq(apiKey, categoryContentType.name, categoriesWithParent.slice(page*25,(page+1)*25));
-            notify.resultNotify(result, 'Categories with parents from page', page);
-            imported++;
-            console.log('Updating categories parents progress: ' + imported + '/' + categoriesWithParent.length);
+        totalPages = Math.ceil(categoriesWithParent.length / 25);
+        for (page; page < totalPages && !quotaExceeded; page++) {
+            try {
+                await flotiqClient.persistContentObjectBatch(categoryContentType.name, categoriesWithParent.slice(page * 25, (page + 1) * 25));
+            } catch (error) {
+                if (isQuotaError(error)) {
+                    logger.error('Quota exceeded. Stopping categories parents update.');
+                    quotaExceeded = true;
+                } else {
+                    throw error;
+                }
+            }
         }
     }
 
@@ -74,4 +75,4 @@ exports.importer = async (apiKey, wordpressUrl) => {
             }] : []
         }
     }
-}
+};

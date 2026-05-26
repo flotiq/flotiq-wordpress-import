@@ -1,23 +1,26 @@
-const notify = require('../../../helpers/notify');
-const connect = require('../helpers/connect');
-const convertHelper = require('../helpers/convert');
-const postContentType = require('../../../content-type-definitions/contentType4.json');
-const tagContentType = require('../../../content-type-definitions/contentType2.json');
-const categoryContentType = require('../../../content-type-definitions/contentType3.json');
-const authorContentType = require('../../../content-type-definitions/contentType1.json');
-const {flotiq} = require('../../../helpers/flotiq');
+import * as connect from '../helpers/connect.js';
+import * as convertHelper from '../helpers/convert.js';
+import postContentType from '../../../content-type-definitions/contentType4.json' with {type: 'json'};
+import tagContentType from '../../../content-type-definitions/contentType2.json' with {type: 'json'};
+import categoryContentType from '../../../content-type-definitions/contentType3.json' with {type: 'json'};
+import authorContentType from '../../../content-type-definitions/contentType1.json' with {type: 'json'};
+import {getFlotiqApi} from '@flotiq/api';
+import logger from '@flotiq/api/src/logger.js';
+import config from '../../../configuration/config.js';
+import {isQuotaError} from '../../../helpers/quota-helper.js';
 
-exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
-    console.log('Importing posts to Flotiq');
+export const importer = async (apiKey, wordpressUrl, mediaArray) => {
+    logger.info('# Importing posts to Flotiq');
+    const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey);
     let perPage = 25;
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
-    let imported = 0;
+    let quotaExceeded = false;
 
-    for(page; page <= totalPages; page++) {
+    for (page; page <= totalPages && !quotaExceeded; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'posts');
-        if(!(wordpressResponse && wordpressResponse.totalPages && wordpressResponse.totalCount)){
+        if (!(wordpressResponse && wordpressResponse.totalPages && wordpressResponse.totalCount)) {
             return;
         }
         totalPages = wordpressResponse.totalPages;
@@ -28,59 +31,57 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
         responseJson.map(async (post) => {
             postsConverted.push(convert(post, mediaArray));
         })
-        let result = await flotiq(apiKey, postContentType.name, postsConverted);
-        let json;
-        let text;
-        try{
-            text = await result.text();
-            console.log(text);
-            json = JSON.parse(text);
-
-        }catch (e) {
-            console.log(text);
+        try {
+            await flotiqClient.persistContentObjectBatch(postContentType.name, postsConverted);
+        } catch (error) {
+            if (isQuotaError(error)) {
+                logger.error('Quota exceeded. Stopping posts import.');
+                quotaExceeded = true;
+            } else {
+                throw error;
+            }
         }
-        if(json && json.batch_success_count && json.errors.length === 0){
-            imported+=json.batch_success_count;
-        }
-        notify.resultNotify(result, 'Posts from page', page);
-        console.log('Posts progress: ' + imported + '/' + totalCount);
+    }
+};
 
+function convert(post, mediaArray) {
+    let tags = post.tags.length ? post.tags.map((tag) => {
+        return {
+            type: 'internal', dataUrl: '/api/v1/content/' + tagContentType.name + '/' + tagContentType.name + '_' + tag
+        };
+    }) : [];
+    let categories = post.categories.length ? post.categories.map((category) => {
+        return {
+            type: 'internal',
+            dataUrl: '/api/v1/content/' + categoryContentType.name + '/' + categoryContentType.name + '_' + category
+        };
+    }) : [];
+
+    let content = convertHelper.convertContent(post.content.rendered, mediaArray);
+
+    // Add placeholder if featured media is not available
+    if (post.featured_media && !mediaArray[post.featured_media]) {
+        content += '\n\n[Placeholder Image - Featured image was not uploaded]';
     }
 
-    function convert(post, mediaArray) {
-        let tags = post.tags.length ? post.tags.map((tag) => {
-            return {
-                type: 'internal',
-                dataUrl: '/api/v1/content/' + tagContentType.name + '/' + tagContentType.name + '_' + tag
-            };
-        }) : [];
-        let categories = post.categories.length ? post.categories.map((category) => {
-            return {
-                type: 'internal',
-                dataUrl: '/api/v1/content/' + categoryContentType.name + '/' + categoryContentType.name + '_' + category
-            };
-        }) : [];
-        return {
-            id: postContentType.name + '_' + post.id,
-            slug: post.slug,
-            title: post.title.rendered,
-            status: post.status,
-            type: post.type,
-            created: post.date,
-            modified: post.modified,
-            content: convertHelper.convertContent(post.content.rendered, mediaArray),
-            excerpt: post.excerpt.rendered,
-            author: [{
-                type: 'internal',
-                dataUrl: '/api/v1/content/' + authorContentType.name + '/' + authorContentType.name + '_' + post.author
-            }],
-            featuredMedia: post.featured_media && mediaArray[post.featured_media] ? [{
-                type: 'internal',
-                dataUrl: '/api/v1/content/_media/' + mediaArray[post.featured_media].id
-            }] : [],
-            tags: tags,
-            categories: categories
-
-        }
+    return {
+        id: postContentType.name + '_' + post.id,
+        slug: post.slug,
+        title: post.title.rendered,
+        status: post.status,
+        type: post.type,
+        created: post.date,
+        modified: post.modified,
+        content: content,
+        excerpt: post.excerpt.rendered,
+        author: [{
+            type: 'internal',
+            dataUrl: '/api/v1/content/' + authorContentType.name + '/' + authorContentType.name + '_' + post.author
+        }],
+        featuredMedia: post.featured_media && mediaArray[post.featured_media] ? [{
+            type: 'internal', dataUrl: '/api/v1/content/_media/' + mediaArray[post.featured_media].id
+        }] : [],
+        tags: tags,
+        categories: categories
     }
 }

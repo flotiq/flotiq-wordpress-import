@@ -1,20 +1,24 @@
-const notify = require('../../../helpers/notify');
-const connect = require('../helpers/connect');
-const convertHelper = require('../helpers/convert');
-const pageContentType = require('../../../content-type-definitions/contentType5.json');
-const authorContentType = require('../../../content-type-definitions/contentType1.json');
-const {flotiq} = require('../../../helpers/flotiq');
+import * as connect from '../helpers/connect.js';
+import * as convertHelper from '../helpers/convert.js';
+import pageContentType from '../../../content-type-definitions/contentType5.json' with {type: 'json'};
+import authorContentType from '../../../content-type-definitions/contentType1.json' with {type: 'json'};
+import {getFlotiqApi} from '@flotiq/api';
+import logger from '@flotiq/api/src/logger.js';
+import config from '../../../configuration/config.js';
+import {isQuotaError} from '../../../helpers/quota-helper.js';
 
-exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
-    console.log('Importing pages to Flotiq');
+export const importer = async (apiKey, wordpressUrl, mediaArray) => {
+    logger.info('Importing pages to Flotiq');
+    const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey);
     let perPage = 25;
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
     let imported = 0;
     let pagesWithParent = [];
+    let quotaExceeded = false;
 
-    for(page; page <= totalPages; page++) {
+    for (page; page <= totalPages && !quotaExceeded; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'pages');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -23,70 +27,76 @@ exports.importer = async (apiKey, wordpressUrl, mediaArray) => {
         let pagesConverted = [];
         responseJson.map(async (page) => {
             pagesConverted.push(convert(page, mediaArray));
-            if(page.parent) {
+            if (page.parent) {
                 pagesWithParent.push(convert2(page, mediaArray));
             }
         })
-        let result = await flotiq(apiKey, pageContentType.name, pagesConverted);
-        let json;
-        let text;
-        try{
-            text = await result.text()
-            console.log(text);
-            json = JSON.parse(text);
-
-        } catch (e) {
-            console.log(text);
+        try {
+            await flotiqClient.persistContentObjectBatch(pageContentType.name, pagesConverted);
+        } catch (error) {
+            if (isQuotaError(error)) {
+                logger.error('Quota exceeded. Stopping pages import.');
+                quotaExceeded = true;
+            } else {
+                throw error;
+            }
         }
-        if(json && json.batch_success_count && json.errors.length === 0){
-            imported+=json.batch_success_count;
-        }
-
-
-        notify.resultNotify(result, 'Pages from page', page);
-
-        console.log('Pages progress: ' + imported + '/' + totalCount);
-
     }
-    if(pagesWithParent.length) {
+
+    if (!quotaExceeded && pagesWithParent.length) {
         page = 0;
         imported = 0;
-        totalPages = Math.ceil(pagesWithParent.length/25);
-        for(page; page < totalPages; page++) {
-            let result = await flotiq(apiKey, pageContentType.name, pagesWithParent.slice(page*25,(page+1)*25));
-            notify.resultNotify(result, 'Pages with parents from page', page);
-            imported++;
-            console.log('Updating pages parents progress: ' + imported + '/' + pagesWithParent.length);
+        totalPages = Math.ceil(pagesWithParent.length / 25);
+        for (page; page < totalPages && !quotaExceeded; page++) {
+            try {
+                await flotiqClient.persistContentObjectBatch(pageContentType.name, pagesWithParent.slice(page * 25, (page + 1) * 25));
+                imported++;
+                logger.info('Updating pages parents progress: ' + imported + '/' + pagesWithParent.length);
+            } catch (error) {
+                if (isQuotaError(error)) {
+                    logger.error('Quota exceeded. Stopping pages parents update.');
+                    quotaExceeded = true;
+                } else {
+                    throw error;
+                }
+            }
         }
     }
+};
 
-    function convert(page, mediaArray) {
-        return {
-            id: pageContentType.name + '_' + page.id,
-            slug: page.slug,
-            title: page.title.rendered,
-            status: page.status,
-            created: page.date,
-            modified: page.modified,
-            content: convertHelper.convertContent(page.content.rendered, mediaArray),
-            author: [{
-                type: 'internal',
-                dataUrl: '/api/v1/content/' + authorContentType.name + '/' + authorContentType.name + '_' + page.author
-            }],
-            featuredMedia: page.featured_media && mediaArray[page.featured_media] ? [{
-                type: 'internal',
-                dataUrl: '/api/v1/content/_media/' + mediaArray[page.featured_media].id
-            }] : []
+function convert(page, mediaArray) {
+    let content = convertHelper.convertContent(page.content.rendered, mediaArray);
 
-        }
+    // Add placeholder if featured media is not available
+    if (page.featured_media && !mediaArray[page.featured_media]) {
+        content += '\n\n[Placeholder Image - Featured image was not uploaded]';
     }
-    function convert2(page, mediaArray) {
-        return {
-            ...convert(page, mediaArray),
-            parentPage: page.parent ? [{
-                type: 'internal',
-                dataUrl: '/api/v1/content/' + pageContentType.name + '/' + pageContentType.name + '_' + page.parent
-            }] : []
-        }
+    return {
+        id: pageContentType.name + '_' + page.id,
+        slug: page.slug,
+        title: page.title.rendered,
+        status: page.status,
+        created: page.date,
+        modified: page.modified,
+        content: content,
+        author: [{
+            type: 'internal',
+            dataUrl: '/api/v1/content/' + authorContentType.name + '/' + authorContentType.name + '_' + page.author
+        }],
+        featuredMedia: page.featured_media && mediaArray[page.featured_media] ? [{
+            type: 'internal',
+            dataUrl: '/api/v1/content/_media/' + mediaArray[page.featured_media].id
+        }] : []
+
+    }
+}
+
+function convert2(page, mediaArray) {
+    return {
+        ...convert(page, mediaArray),
+        parentPage: page.parent ? [{
+            type: 'internal',
+            dataUrl: '/api/v1/content/' + pageContentType.name + '/' + pageContentType.name + '_' + page.parent
+        }] : []
     }
 }

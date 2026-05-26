@@ -1,24 +1,22 @@
 #!/usr/bin/env node
 
-const inquirer = require("inquirer");
-const yargs = require('yargs');
+import inquirer from 'inquirer';
+import yargs from 'yargs';
+import startImportWordpressCom from '../platforms/wordpress.com/import.js';
+import startImportWordpress from '../platforms/wordpress/import.js';
 
-const run = (apiKey, wordpressUrl, isJson = false) => {
+const run = (apiKey, wordpressUrl) => {
     if (wordpressUrl.charAt(wordpressUrl.length - 1) !== '/') {
         wordpressUrl += '/';
     }
 
-    if (getPlatform(wordpressUrl) === 'wordpress.com') {
-        const startImport = require('../platforms/wordpress.com/import');
-    } else {
-        const startImport = require('../platforms/wordpress/import');
-    }
-    startImport(apiKey, wordpressUrl, isJson)
+    const startImport = getPlatform(wordpressUrl) === 'wordpress.com'
+        ? startImportWordpressCom
+        : startImportWordpress;
+
+    startImport(apiKey, wordpressUrl)
 }
 yargs
-    .boolean('json-output')
-    .alias('json-output', ['j'])
-    .describe('json-output', ' Whether to return results as JSON')
     .command('import [apiKey] [wordpressUrl]', 'Import wordpress to Flotiq', (yargs) => {
         yargs
             .positional('apiKey', {
@@ -33,9 +31,9 @@ yargs
         if (yargs.argv._.length < 3) {
             const answers = await askStartQuestions();
             const {apiKey, wordpressUrl} = answers;
-            run(apiKey, wordpressUrl, yargs.argv['json-output'])
+            run(apiKey, wordpressUrl)
         } else if (yargs.argv._.length === 3) {
-            run(argv.apiKey, argv.wordpressUrl, yargs.argv['json-output'])
+            run(argv.apiKey, argv.wordpressUrl)
         } else {
             yargs.showHelp();
             process.exit(1);
@@ -75,4 +73,4 @@ function getPlatform(wordpressUrl) {
     return 'wordpress';
 }
 
-exports.run = run;
+export { run };

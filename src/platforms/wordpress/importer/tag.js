@@ -1,17 +1,20 @@
-const notify = require('../../../helpers/notify');
-const connect = require('../helpers/connect');
-const {flotiq} = require('../../../helpers/flotiq');
-const tagContentType = require('../../../content-type-definitions/contentType2.json');
+import * as connect from '../helpers/connect.js';
+import {getFlotiqApi} from '@flotiq/api';
+import tagContentType from '../../../content-type-definitions/contentType2.json' with {type: 'json'};
+import logger from "@flotiq/api/src/logger.js";
+import config from "../../../configuration/config.js";
+import {isQuotaError} from '../../../helpers/quota-helper.js';
 
-exports.importer = async (apiKey, wordpressUrl) => {
-    console.log('Importing tags to Flotiq');
+export const importer = async (apiKey, wordpressUrl) => {
+    logger.info('# Importing tags to Flotiq');
+    const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey)
     let perPage = 25;
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
-    let imported = 0;
+    let quotaExceeded = false;
 
-    for(page; page <= totalPages; page++) {
+    for (page; page <= totalPages && !quotaExceeded; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'tags');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -21,23 +24,19 @@ exports.importer = async (apiKey, wordpressUrl) => {
         responseJson.map(async (tag) => {
             tagsConverted.push(convert(tag));
         })
-        let result = await flotiq(apiKey, tagContentType.name, tagsConverted);
-        let json;
-        let text;
-        try{
-            text = await result.text()
-            console.log(text);
-            json = JSON.parse(text);
-
-        }catch (e) {
-            console.log(text);
+        if (!tagsConverted.length) {
+            break;
         }
-        if(json && json.batch_success_count && json.errors.length === 0){
-            imported+=json.batch_success_count;
+        try {
+            await flotiqClient.persistContentObjectBatch(tagContentType.name, tagsConverted);
+        } catch (error) {
+            if (isQuotaError(error)) {
+                logger.error('Quota exceeded. Stopping tags import.');
+                quotaExceeded = true;
+            } else {
+                throw error;
+            }
         }
-        notify.resultNotify(result, 'Tags from page', page);
-        console.log('Tags progress: ' + imported + '/' + totalCount);
-
     }
 
     function convert(tag) {
@@ -48,4 +47,4 @@ exports.importer = async (apiKey, wordpressUrl) => {
             description: tag.description
         }
     }
-}
+};

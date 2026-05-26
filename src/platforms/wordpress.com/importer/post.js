@@ -1,20 +1,21 @@
-const notify = require('../../../helpers/notify');
-const connect = require('../helpers/connect');
-const postContentType = require('../../../content-type-definitions/contentType4.json');
-const tagContentType = require('../../../content-type-definitions/contentType2.json');
-const categoryContentType = require('../../../content-type-definitions/contentType3.json');
-const authorContentType = require('../../../content-type-definitions/contentType1.json');
-const {flotiq} = require('../../../helpers/flotiq');
+import * as connect from '../helpers/connect.js';
+import postContentType from '../../../content-type-definitions/contentType4.json' with {type: 'json'};
+import tagContentType from '../../../content-type-definitions/contentType2.json' with {type: 'json'};
+import categoryContentType from '../../../content-type-definitions/contentType3.json' with {type: 'json'};
+import authorContentType from '../../../content-type-definitions/contentType1.json' with {type: 'json'};
+import {getFlotiqApi} from '@flotiq/api';
+import logger from '@flotiq/api/src/logger.js';
+import config from "../../../configuration/config.js";
 
-exports.importer = async (apiKey, wordpressUrl) => {
-    console.log('Importing posts to Flotiq');
+export const importer = async (apiKey, wordpressUrl) => {
+    logger.info('# Importing posts to Flotiq');
+    const flotiqClient = getFlotiqApi(config.getApiBaseUrl(), apiKey);
     let perPage = 25;
     let page = 1;
     let totalPages = 1;
     let totalCount = 1;
-    let imported = 0;
 
-    for(page; page <= totalPages; page++) {
+    for (page; page <= totalPages; page++) {
         let wordpressResponse = await connect.wordpress(wordpressUrl, perPage, page, totalPages, 'posts');
         totalPages = wordpressResponse.totalPages;
         totalCount = wordpressResponse.totalCount;
@@ -32,12 +33,7 @@ exports.importer = async (apiKey, wordpressUrl) => {
 
         await addAuthors(posts);
 
-        let result = await flotiq(apiKey, postContentType.name, postsConverted);
-        notify.resultNotify(result, 'Posts from page', page);
-        result = await result.json()
-        imported+=result.batch_success_count;
-        console.log('Posts progress: ' + imported + '/' + totalCount);
-
+        await flotiqClient.persistContentObjectBatch(postContentType.name, postsConverted);
     }
 
     async function addAuthors(posts) {
@@ -49,17 +45,17 @@ exports.importer = async (apiKey, wordpressUrl) => {
         });
 
         let uniqueAuthors = authors.reduce((unique, o) => {
-            if(!unique.some(obj => obj.id === o.id )) {
+            if (!unique.some(obj => obj.id === o.id)) {
                 unique.push(o);
             }
             return unique;
-        },[]);
+        }, []);
 
-        await flotiq(apiKey, authorContentType.name, uniqueAuthors);
+        await flotiqClient.persistContentObjectBatch(authorContentType.name, uniqueAuthors);
     }
 
     function convertAuthors(author) {
-        return  {
+        return {
             id: authorContentType.name + '_' + author.ID,
             slug: author.login,
             name: author.name,
@@ -102,4 +98,4 @@ exports.importer = async (apiKey, wordpressUrl) => {
             categories: categories
         }
     }
-}
+};

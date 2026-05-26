@@ -1,34 +1,26 @@
-const config = require('../configuration/config');
-const fetch = require('node-fetch');
-const notify = require('../helpers/notify');
+import config from '../configuration/config.js';
+import {getFlotiqApi} from '@flotiq/api';
+import logger from '@flotiq/api/src/logger.js';
+import contentType1 from '../content-type-definitions/contentType1.json' with {type: 'json'};
+import contentType2 from '../content-type-definitions/contentType2.json' with {type: 'json'};
+import contentType3 from '../content-type-definitions/contentType3.json' with {type: 'json'};
+import contentType4 from '../content-type-definitions/contentType4.json' with {type: 'json'};
+import contentType5 from '../content-type-definitions/contentType5.json' with {type: 'json'};
 
-let headers = {
-    accept: 'application/json',
-};
 
-exports.importer = async (apiKey) => {
-    console.log('Importing content type definitions to Flotiq');
-    headers['X-AUTH-TOKEN'] = apiKey;
+export const importer = async (apiKey) => {
+    logger.info('# Importing content type definitions to Flotiq');
+    const client = getFlotiqApi(config.getApiBaseUrl(), apiKey);
 
-    let contentDefinitions = [
-        require('../content-type-definitions/contentType1.json'),
-        require('../content-type-definitions/contentType2.json'),
-        require('../content-type-definitions/contentType3.json'),
-        require('../content-type-definitions/contentType4.json'),
-        require('../content-type-definitions/contentType5.json'),
-    ]
+    await importContentTypedDefinitions(contentType1);
+    await importContentTypedDefinitions(contentType2);
+    await importContentTypedDefinitions(contentType3);
+    await importContentTypedDefinitions(contentType4);
+    await importContentTypedDefinitions(contentType5);
 
-    await Promise.all(contentDefinitions.map(async function (contentDefinition) {
-        await importContentTypedDefinitions(contentDefinition, headers);
-    }));
-
-    async function importContentTypedDefinitions(contentDefinition, headers) {
-        let result = await fetch(config.apiUrl + '/api/v1/internal/contenttype', {
-            method: 'POST',
-            body: JSON.stringify(contentDefinition),
-            headers: {...headers, 'Content-Type': 'application/json'},
-        });
-        notify.resultNotify(result, 'Definition', contentDefinition.name);
+    async function importContentTypedDefinitions(contentDefinition) {
+        await client.createOrUpdate(null, structuredClone(contentDefinition));
+        logger.info(`Definition: ${contentDefinition.name} has not been added, existing`)
         return contentDefinition.name;
     }
-}
+};

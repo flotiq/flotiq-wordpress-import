@@ -1,7 +1,7 @@
-const config = require('../../../configuration/config');
+import config from '../../../configuration/config.js';
 
-exports.convertContent = (content, mediaArray) => {
-    let convertedMediaArray = exports.convertMediaArray(mediaArray);
+const convertContent = (content, mediaArray) => {
+    let convertedMediaArray = convertMediaArray(mediaArray);
     Object.keys(convertedMediaArray).forEach((media) => {
         Object.keys(convertedMediaArray[media].sizes).forEach(size => {
             const regex = new RegExp(convertedMediaArray[media].sizes[size].source_url.replace(/\\/g, "\\\\").replace(/\./g, "\\\."), 'g');
@@ -9,12 +9,14 @@ exports.convertContent = (content, mediaArray) => {
         })
     })
     return content;
-}
+};
 
-exports.convertMediaArray = (mediaArray) => {
+const convertMediaArray = (mediaArray) => {
     let convertedMediaArray = {}
     Object.keys(mediaArray).forEach((media) => {
         convertedMediaArray[mediaArray[media].fileName] = mediaArray[media];
     })
     return convertedMediaArray;
-}
+};
+
+export { convertContent, convertMediaArray };

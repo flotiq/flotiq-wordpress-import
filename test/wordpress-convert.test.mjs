@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
-const config = require('../src/configuration/config');
-const convert = require('../src/platforms/wordpress/helpers/convert');
+import config from '../src/configuration/config.js';
+import * as convert from '../src/platforms/wordpress/helpers/convert.js';
 
 describe('wordpress convert helpers', () => {
     beforeEach(() => {

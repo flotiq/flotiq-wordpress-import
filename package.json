@@ -2,6 +2,7 @@
   "name": "flotiq-wordpress-import",
   "version": "1.1.9",
   "description": "Importer of wordpress posts to Flotiq",
+  "type": "module",
   "main": "src/command/command.js",
   "private": false,
   "bin": {
@@ -21,12 +22,13 @@
   "author": "Flotiq team <hello@flotiq.com>",
   "license": "MIT",
   "dependencies": {
+    "@flotiq/api": "^1.0.0",
     "form-data": "^3.0.0",
     "inquirer": "^7.3.0",
-    "node-fetch": "^2.6.0",
     "yargs": "^15.3.1"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "3.2.4",
     "vitest": "^3.2.4"
   }
 }
