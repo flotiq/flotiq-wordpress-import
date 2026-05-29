@@ -15,8 +15,7 @@
             "minLength": 1
           },
           "title": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "author": {
             "type": "array",
@@ -55,7 +54,6 @@
       }
     ],
     "required": [
-      "title",
       "slug"
     ],
     "additionalProperties": false
