@@ -5,7 +5,7 @@ export const wordpress = async (wordpressUrl, perPage, page, totalPages, type) =
     let url = `https://public-api.wordpress.com/rest/v1.1/sites/${site}/${type}?number=${perPage}&page=${page}&order_by=ID`
     url = url.replace("com//", 'com/');
 
-    console.log('Fetching ' + url);
+    logger.info('Fetching ' + url);
     try {
         let response = await fetch(url, {
             method: 'GET'
@@ -16,8 +16,8 @@ export const wordpress = async (wordpressUrl, perPage, page, totalPages, type) =
 
         return {totalCount: totalCount, totalPages: totalPages, responseJson: responseJson[type]}
     } catch (e) {
-        logger.error('Incorrect Wordpress Url');
-        logger.error('Skipped: ' + wordpressUrl)
+        logger.error(`Error fetching from Wordpress URL: ${wordpressUrl}, code: ${e.code}, message: ${e.message}`);
+        logger.error('Skipped: ' + wordpressUrl, perPage, page, totalPages, type)
     }
 };
 

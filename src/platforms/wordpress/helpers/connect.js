@@ -24,7 +24,7 @@ const fetchWithRetry = async (url, options, retryCount = 0) => {
         
         if ((e.code === 'ECONNRESET' || e.code === 'ETIMEDOUT' || e.name === 'AbortError') && retryCount < MAX_RETRIES) {
             const delayMs = RETRY_DELAY_MS * Math.pow(2, retryCount);
-            console.log(`Connection error (${e.code}), retrying in ${delayMs}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+            logger.error(`Connection error (${e.code}), retrying in ${delayMs}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
             await sleep(delayMs);
             return fetchWithRetry(url, options, retryCount + 1);
         }
@@ -44,8 +44,7 @@ export const wordpress = async (wordpressUrl, perPage, page, totalPages, type) =
         let responseJson = await response.json();
         return {totalCount: totalCount, totalPages: totalPages, responseJson: responseJson}
     } catch (e) {
-        console.error(e);
-        console.error('Error fetching from Wordpress URL: ' + wordpressUrl);
-        console.error('Skipped: ' + wordpressUrl, perPage, page, totalPages, type)
+        logger.error(`Error fetching from Wordpress URL: ${wordpressUrl}, code: ${e.code}, message: ${e.message}`);
+        logger.error('Skipped: ' + wordpressUrl, perPage, page, totalPages, type)
     }
 };
